@@ -602,6 +602,182 @@ function Reports({token,notify}){
 }
 
 
+// ── MODERATION QUEUE ──────────────────────────────────────────────────────────
+function ModerationQueue({token,notify}){
+  const [items,setItems]=useState([]);
+  const [total,setTotal]=useState(0);
+  const [loading,setLoading]=useState(true);
+  const [selected,setSelected]=useState(null);
+  const [actionModal,setActionModal]=useState(null); // {id,title,action:"approve"|"reject"|"changes"}
+  const [note,setNote]=useState("");
+  const [submitting,setSubmitting]=useState(false);
+  const [photoIdx,setPhotoIdx]=useState(0);
+
+  const load=()=>{
+    setLoading(true);
+    req("/api/admin/moderation/queue",{},token).then(d=>{
+      setItems(d.listings||[]);setTotal(d.total||0);
+    }).catch(()=>{}).finally(()=>setLoading(false));
+  };
+  useEffect(()=>{load();},[token]);
+
+  const doAction=async()=>{
+    if(!actionModal)return;
+    if((actionModal.action==="reject"||actionModal.action==="changes")&&!note.trim()){
+      notify("Please provide a reason",false);return;
+    }
+    setSubmitting(true);
+    const endpoint=actionModal.action==="approve"?`/api/admin/moderation/${actionModal.id}/approve`
+      :actionModal.action==="reject"?`/api/admin/moderation/${actionModal.id}/reject`
+      :`/api/admin/moderation/${actionModal.id}/request-changes`;
+    const body=actionModal.action==="approve"?{}
+      :actionModal.action==="reject"?{reason:note}:{note};
+    try{
+      await req(endpoint,{method:"POST",body:JSON.stringify(body)},token);
+      notify(actionModal.action==="approve"?"✅ Listing approved and live"
+        :actionModal.action==="reject"?"❌ Listing rejected":"✏️ Changes requested",true);
+      setItems(p=>p.filter(l=>l.id!==actionModal.id));
+      setTotal(t=>t-1);
+      setActionModal(null);setNote("");
+      if(selected?.id===actionModal.id)setSelected(null);
+    }catch(e){notify(e.message,false);}
+    finally{setSubmitting(false);}
+  };
+
+  if(loading)return<div style={{textAlign:"center",padding:60}}><Spin/></div>;
+
+  return<>
+    <div style={{display:"flex",gap:12,marginBottom:20,alignItems:"center",flexWrap:"wrap"}}>
+      <div style={{fontSize:13,color:"var(--mut)"}}>
+        {total===0?"All caught up! No listings pending review.":`${total} listing${total!==1?"s":""} waiting for review`}
+      </div>
+      <button className="btn bs sm" onClick={load} style={{marginLeft:"auto"}}>↻ Refresh</button>
+    </div>
+
+    {total===0?<div className="empty">
+      <div style={{fontSize:48,marginBottom:12,opacity:.2}}>✅</div>
+      <div style={{fontWeight:700,fontSize:16,marginBottom:6}}>Queue is empty</div>
+      <div style={{fontSize:13,color:"var(--mut)"}}>All listings have been reviewed</div>
+    </div>:
+
+    <div style={{display:"grid",gridTemplateColumns:selected?"1fr 420px":"1fr",gap:16}}>
+      {/* List */}
+      <div>
+        {items.map(l=>(
+          <div key={l.id} onClick={()=>{setSelected(l);setPhotoIdx(0);}}
+            style={{padding:"14px 16px",background:selected?.id===l.id?"rgba(20,40,160,.04)":"var(--surf)",
+              border:`1px solid ${selected?.id===l.id?"var(--accent)":"var(--border)"}`,
+              marginBottom:8,cursor:"pointer",display:"flex",gap:12,alignItems:"flex-start",transition:"all .15s"}}>
+            {/* Thumb */}
+            <div style={{width:72,height:58,background:"var(--sh)",flexShrink:0,overflow:"hidden",borderRadius:"var(--rs)"}}>
+              {l.photos?.length>0?<img src={l.photos[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                :<span style={{fontSize:28,display:"flex",alignItems:"center",justifyContent:"center",height:"100%",opacity:.2}}>📦</span>}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:700,fontSize:14,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.title}</div>
+              <div style={{fontSize:12,color:"var(--mut)",marginTop:2}}>{l.category} · {fmtKES(l.price)}</div>
+              <div style={{fontSize:11,color:"var(--dim)",marginTop:2}}>{l.seller_name} · {ago(l.created_at)}</div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:4,flexShrink:0}}>
+              <button className="btn bp sm" onClick={e=>{e.stopPropagation();setActionModal({id:l.id,title:l.title,action:"approve"});}} style={{fontSize:11}}>✅ Approve</button>
+              <button className="btn by sm" onClick={e=>{e.stopPropagation();setNote("");setActionModal({id:l.id,title:l.title,action:"changes"});}} style={{fontSize:11}}>✏️ Changes</button>
+              <button className="btn br sm" onClick={e=>{e.stopPropagation();setNote("");setActionModal({id:l.id,title:l.title,action:"reject"});}} style={{fontSize:11}}>❌ Reject</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Detail panel */}
+      {selected&&<div style={{background:"var(--surf)",border:"1px solid var(--border)",padding:20,position:"sticky",top:80,maxHeight:"calc(100vh - 120px)",overflowY:"auto"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontWeight:700,fontSize:15}}>Ad Details</div>
+          <button className="btn bgh sm" onClick={()=>setSelected(null)}>✕</button>
+        </div>
+
+        {/* Photos carousel */}
+        {selected.photos?.length>0&&<div style={{marginBottom:14}}>
+          <div style={{aspectRatio:"16/9",background:"var(--sh)",overflow:"hidden",borderRadius:"var(--rs)",position:"relative"}}>
+            <img src={selected.photos[photoIdx]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+            {selected.photos.length>1&&<>
+              <button onClick={()=>setPhotoIdx(p=>(p-1+selected.photos.length)%selected.photos.length)}
+                style={{position:"absolute",left:8,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.5)",color:"#fff",border:"none",borderRadius:"50%",width:28,height:28,cursor:"pointer",fontSize:14}}>←</button>
+              <button onClick={()=>setPhotoIdx(p=>(p+1)%selected.photos.length)}
+                style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"rgba(0,0,0,.5)",color:"#fff",border:"none",borderRadius:"50%",width:28,height:28,cursor:"pointer",fontSize:14}}>→</button>
+              <div style={{position:"absolute",bottom:8,right:8,background:"rgba(0,0,0,.6)",color:"#fff",fontSize:11,padding:"2px 8px",borderRadius:10}}>{photoIdx+1}/{selected.photos.length}</div>
+            </>}
+          </div>
+        </div>}
+
+        <div style={{fontSize:13,marginBottom:10}}>
+          <strong>{selected.title}</strong>
+          <div style={{color:"var(--mut)",marginTop:3,fontSize:12}}>{selected.category}{selected.subcat?" › "+selected.subcat:""}</div>
+        </div>
+        <div style={{fontSize:18,fontWeight:700,color:"var(--accent)",marginBottom:10}}>{fmtKES(selected.price)}</div>
+        <div className="lbl">Description</div>
+        <div style={{fontSize:13,color:"var(--mut)",lineHeight:1.65,marginBottom:12,whiteSpace:"pre-wrap",maxHeight:140,overflow:"auto"}}>{selected.description}</div>
+        {selected.reason_for_sale&&<><div className="lbl">Reason for Sale</div>
+          <div style={{fontSize:13,color:"var(--mut)",marginBottom:12}}>{selected.reason_for_sale}</div></>}
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          {selected.location&&<span className="badge bm">📍 {selected.location}</span>}
+          {selected.county&&<span className="badge bm">{selected.county}</span>}
+        </div>
+        <div className="lbl">Seller</div>
+        <div style={{fontSize:13,marginBottom:16}}>
+          <div style={{fontWeight:600}}>{selected.seller_name}</div>
+          <div style={{color:"var(--mut)",fontSize:12}}>{selected.seller_email}</div>
+        </div>
+
+        <div style={{display:"flex",gap:8,flexDirection:"column"}}>
+          <button className="btn bp" style={{width:"100%"}} onClick={()=>setActionModal({id:selected.id,title:selected.title,action:"approve"})}>✅ Approve — Go Live</button>
+          <button className="btn by" style={{width:"100%"}} onClick={()=>{setNote("");setActionModal({id:selected.id,title:selected.title,action:"changes"});}}>✏️ Request Changes</button>
+          <button className="btn br" style={{width:"100%"}} onClick={()=>{setNote("");setActionModal({id:selected.id,title:selected.title,action:"reject"});}}>❌ Reject Listing</button>
+        </div>
+      </div>}
+    </div>}
+
+    {/* Action Modal */}
+    {actionModal&&<div className="modal-ov" onClick={e=>e.target===e.currentTarget&&setActionModal(null)}>
+      <div className="modal">
+        <div className="mh">
+          <span style={{fontWeight:700}}>
+            {actionModal.action==="approve"?"✅ Approve Listing"
+              :actionModal.action==="reject"?"❌ Reject Listing":"✏️ Request Changes"}
+          </span>
+          <button className="btn bgh sm" onClick={()=>setActionModal(null)}>✕</button>
+        </div>
+        <div className="mb">
+          <div style={{fontSize:13,color:"var(--mut)",marginBottom:16}}>
+            Listing: <strong>{actionModal.title}</strong>
+          </div>
+          {actionModal.action==="approve"&&<div style={{background:"rgba(20,40,160,.06)",border:"1px solid rgba(20,40,160,.2)",padding:"12px 14px",borderRadius:"var(--rs)",fontSize:13,color:"var(--accent)"}}>
+            This listing will go live immediately and be visible to all buyers. The seller will be notified by email and in-app.
+          </div>}
+          {actionModal.action==="reject"&&<>
+            <div style={{fontSize:12,color:"var(--mut)",marginBottom:10}}>Explain why this listing was rejected. The seller will receive this message and may edit and resubmit.</div>
+            <FF label="Rejection Reason (required)">
+              <textarea className="inp" rows={3} placeholder="e.g. Prohibited item, misleading description, contact info in photos..." value={note} onChange={e=>setNote(e.target.value)}/>
+            </FF>
+          </>}
+          {actionModal.action==="changes"&&<>
+            <div style={{fontSize:12,color:"var(--mut)",marginBottom:10}}>Tell the seller what needs to be fixed. They can edit the listing and resubmit.</div>
+            <FF label="Changes Needed (required)">
+              <textarea className="inp" rows={3} placeholder="e.g. Please add more photos, the price seems too high for this condition..." value={note} onChange={e=>setNote(e.target.value)}/>
+            </FF>
+          </>}
+        </div>
+        <div className="mf">
+          <button className="btn bs" onClick={()=>setActionModal(null)}>Cancel</button>
+          <button className={`btn ${actionModal.action==="approve"?"bp":actionModal.action==="reject"?"br":"by"}`}
+            onClick={doAction} disabled={submitting}>
+            {submitting?<Spin/>:actionModal.action==="approve"?"✅ Approve"
+              :actionModal.action==="reject"?"❌ Reject":"✏️ Send Feedback"}
+          </button>
+        </div>
+      </div>
+    </div>}
+  </>;
+}
+
 function AdminInvites({token,notify}){
   const [admins,setAdmins]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -682,6 +858,7 @@ function AdminInvites({token,notify}){
 
 const SECTIONS=[
   {id:"overview",icon:"📊",label:"Overview"},
+  {id:"moderation",icon:"🔍",label:"Review Queue"},
   {id:"users",icon:"👥",label:"Users"},
   {id:"listings",icon:"📦",label:"Listings"},
   {id:"reports",icon:"🚩",label:"Reports"},
@@ -730,6 +907,7 @@ export default function AdminApp(){
       </div>
       {section==="overview"&&<Overview token={token}/>}
       {section==="users"&&<Users token={token} notify={notify}/>}
+      {section==="moderation"&&<ModerationQueue token={token} notify={notify}/>}
       {section==="listings"&&<Listings token={token} notify={notify}/>}
       {section==="reports"&&<Reports token={token} notify={notify}/>}
       {section==="violations"&&<Violations token={token} notify={notify}/>}
