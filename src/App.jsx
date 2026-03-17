@@ -1,16 +1,18 @@
-'''
 import React,{useState,useEffect,useCallback} from "react";
+import EscrowManagement from "./components/EscrowManagement";
+import ChatViolations from "./components/ChatViolations";
+import ChatViolations from "./components/ChatViolations";
 
 const API = (process.env.REACT_APP_API_URL || "https://weka-soko-backend-production.up.railway.app").replace(/\/$/, "");
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap");
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --bg:#F4F4F4;--surf:#FFFFFF;--sh:#F4F4F4;--border:#E0E0E0;
   --accent:#1428A0;--accent2:#0F1F8A;--gold:#B07F10;--red:#C03030;--blue:#1428A0;
   --txt:#1D1D1D;--mut:#535353;--dim:#767676;
-  --r:0px;--rs:0px;--fn:'Outfit',system-ui,sans-serif;
+  --r:0px;--rs:0px;--fn:\'Outfit\',system-ui,sans-serif;
 }
 .dark{
   --bg:#000000;--surf:#161616;--sh:#1E1E1E;--border:#2C2C2C;
@@ -233,9 +235,9 @@ function App(){
       {activeTab==="moderation"&&<Moderation token={token}/>}
       {activeTab==="reports"&&<Reports token={token}/>}
       {activeTab==="payments"&&<Payments token={token}/>}
-      {activeTab==="escrows"&&<Escrows token={token}/>}
+      {activeTab==="escrows"&&<EscrowManagement token={token} req={req} Spin={Spin} fmtKES={fmtKES} ago={ago} Toast={Toast} />}
       {activeTab==="vouchers"&&<Vouchers token={token}/>}
-      {activeTab==="chat-violations"&&<ChatViolations token={token}/>}
+    {activeTab==="chat-violations"&&<ChatViolations token={token} req={req} Spin={Spin} ago={ago} Toast={Toast} />}req={req} Spin={Spin} ago={ago} Toast={Toast} />}
     </main>
     {toast&&<Toast msg={toast.msg} ok={toast.ok} onClose={()=>setToast(null)}/>}
   </>;
@@ -333,7 +335,7 @@ function Moderation({token}){
 
   const fetchPending=useCallback(()=>{
     setLoading(true);
-    req('/api/listings/pending',{},token).then(setPending).finally(()=>setLoading(false));
+    req("/api/listings/pending",{},token).then(setPending).finally(()=>setLoading(false));
   },[token]);
 
   useEffect(fetchPending,[fetchPending]);
@@ -375,7 +377,7 @@ function Reports({token}){
 
   const fetchReports=useCallback(()=>{
     setLoading(true);
-    req('/api/reports',{},token).then(setReports).finally(()=>setLoading(false));
+    req("/api/reports",{},token).then(setReports).finally(()=>setLoading(false));
   },[token]);
 
   useEffect(fetchReports,[fetchReports]);
@@ -407,7 +409,7 @@ function Payments({token}){
 
   const fetchPayments=useCallback(()=>{
     setLoading(true);
-    req('/api/payments',{},token).then(setPayments).finally(()=>setLoading(false));
+    req("/api/payments",{},token).then(setPayments).finally(()=>setLoading(false));
   },[token]);
 
   useEffect(fetchPayments,[fetchPayments]);
@@ -434,45 +436,12 @@ function Payments({token}){
   </>;
 }
 
-function Escrows({token}){
-  const [escrows,setEscrows]=useState([]);const [loading,setLoading]=useState(true);
-
-  const fetchEscrows=useCallback(()=>{
-    setLoading(true);
-    req('/api/escrows',{},token).then(setEscrows).finally(()=>setLoading(false));
-  },[token]);
-
-  useEffect(fetchEscrows,[fetchEscrows]);
-
-  return <>
-    <div className="page-header"><h1 className="page-title">Escrows</h1></div>
-    <div className="tw">
-      <div className="ts">
-        <table>
-          <thead><tr><th>ID</th><th>Buyer</th><th>Seller</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
-          <tbody>
-            {loading?<tr><td colSpan="7" style={{textAlign:"center",padding:40}}><Spin/></td></tr>:escrows.length===0?<tr><td colSpan="7" className="empty">No escrows found</td></tr>:escrows.map(e=><tr key={e.id}>
-              <td>{e.id}</td>
-              <td>{e.buyer_name}</td>
-              <td>{e.seller_name}</td>
-              <td>{fmtKES(e.amount)}</td>
-              <td><span className={`badge ${e.status==="funded"?"by2":e.status==="released"?"bg":"bm"}`}>{e.status}</span></td>
-              <td>{ago(e.created_at)}</td>
-              <td><button className="btn sm">View Details</button></td>
-            </tr>)}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </>;
-}
-
 function Vouchers({token}){
   const [vouchers,setVouchers]=useState([]);const [loading,setLoading]=useState(true);
 
   const fetchVouchers=useCallback(()=>{
     setLoading(true);
-    req('/api/vouchers',{},token).then(setVouchers).finally(()=>setLoading(false));
+    req("/api/vouchers",{},token).then(setVouchers).finally(()=>setLoading(false));
   },[token]);
 
   useEffect(fetchVouchers,[fetchVouchers]);
@@ -499,33 +468,50 @@ function Vouchers({token}){
   </>;
 }
 
-function ChatViolations({ token }) {
+function ChatViolations({ token, req, Spin, ago, Toast }) {
   const [violations, setViolations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState(null); // { msg, ok }
+
+  const fetchViolations = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await req("/api/chat-violations", {}, token);
+      setViolations(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, req]);
 
   useEffect(() => {
-    const fetchViolations = async () => {
-      try {
-        setLoading(true);
-        const data = await req("/api/chat-violations", { headers: { Authorization: `Bearer ${token}` } });
-        setViolations(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchViolations();
-  }, [token]);
+  }, [fetchViolations]);
+
+  const handleDismiss = async (id) => {
+    if (!window.confirm(`Are you sure you want to dismiss violation ${id}?`)) return;
+    try {
+      setLoading(true);
+      await req(`/api/chat-violations/${id}/dismiss`, { method: "POST" }, token);
+      setToast({ msg: `Violation ${id} dismissed successfully!`, ok: true });
+      fetchViolations();
+    } catch (err) {
+      setToast({ msg: `Failed to dismiss violation: ${err.message}`, ok: false });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">Chat Violations</h1>
       </div>
-      {loading && <Spin />}
-      {error && <div className="empty">{error}</div>}
+      {loading && <div style={{ padding: 40, textAlign: "center" }}><Spin /></div>}
+      {error && <div className="empty">Error: {error}</div>}
       {!loading && !error && violations.length === 0 && <div className="empty">No chat violations found.</div>}
       {!loading && !error && violations.length > 0 && (
         <div className="tw">
@@ -550,7 +536,7 @@ function ChatViolations({ token }) {
                     <td>{v.reason}</td>
                     <td>{ago(v.created_at)}</td>
                     <td>
-                      <button className="btn sm br">Dismiss</button>
+                      <button className="btn sm br" onClick={() => handleDismiss(v.id)}>Dismiss</button>
                     </td>
                   </tr>
                 ))}
@@ -559,9 +545,9 @@ function ChatViolations({ token }) {
           </div>
         </div>
       )}
+      {toast && <Toast msg={toast.msg} ok={toast.ok} onClose={() => setToast(null)} />}
     </div>
   );
 }
 
 export default App;
-'''
