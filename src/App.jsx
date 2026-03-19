@@ -3,71 +3,90 @@ import React,{useState,useEffect,useCallback} from "react";
 const API = (process.env.REACT_APP_API_URL || "https://weka-soko-backend-production.up.railway.app").replace(/\/$/, "");
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+@font-face{font-family:'SamsungSharpSans';font-weight:400;font-style:normal;font-display:swap;
+  src:url('https://db.onlinewebfonts.com/t/339ef4168eec714f8750c1b72eea3528.woff2') format('woff2'),
+      url('https://db.onlinewebfonts.com/t/339ef4168eec714f8750c1b72eea3528.woff') format('woff');}
+@font-face{font-family:'SamsungSharpSans';font-weight:700;font-style:normal;font-display:swap;
+  src:url('https://db.onlinewebfonts.com/t/03fe5644d1605049951f58ca7961c33f.woff2') format('woff2'),
+      url('https://db.onlinewebfonts.com/t/03fe5644d1605049951f58ca7961c33f.woff') format('woff');}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{--bg:#0C0C0A;--surf:#131311;--sh:#191917;--border:#252521;--accent:#2ECC71;--accent2:#27AE60;--gold:#F0C040;--red:#E05050;--blue:#5B9BD5;--txt:#F0EFE9;--mut:#888880;--dim:#444440;--r:10px;--rs:7px;--fn:'DM Sans',system-ui,sans-serif;}
-body{background:var(--bg);color:var(--txt);font-family:var(--fn);font-size:14px;line-height:1.6;min-height:100vh;}
-::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .14s;white-space:nowrap;font-family:var(--fn);}
+:root{
+  --bg:#FFFFFF;--surf:#FFFFFF;--sh:#F6F6F6;--border:#E6E6E6;
+  --accent:#1428A0;--accent2:#0F1F8A;--gold:#8B6400;--red:#C03030;--blue:#1428A0;
+  --txt:#1D1D1D;--mut:#636363;--dim:#ADADAD;
+  --r:2px;--rs:2px;--fn:'SamsungSharpSans','Helvetica Neue',Helvetica,Arial,sans-serif;
+}
+body{background:#F4F4F4;color:var(--txt);font-family:var(--fn);font-size:14px;line-height:1.55;min-height:100vh;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:#CCCCCC;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 18px;border-radius:0;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .14s;white-space:nowrap;font-family:var(--fn);letter-spacing:.04em;}
 .btn:disabled{opacity:.4;cursor:not-allowed;}
-.bp{background:var(--accent);color:#000;}.bp:hover:not(:disabled){background:var(--accent2);}
-.bs{background:var(--sh);color:var(--txt);border:1px solid var(--border);}.bs:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
-.br{background:rgba(224,80,80,.1);color:var(--red);border:1px solid rgba(224,80,80,.2);}.br:hover:not(:disabled){background:rgba(224,80,80,.2);}
-.by{background:rgba(240,192,64,.1);color:var(--gold);border:1px solid rgba(240,192,64,.2);}.by:hover:not(:disabled){background:rgba(240,192,64,.2);}
-.bb{background:rgba(91,155,213,.1);color:var(--blue);border:1px solid rgba(91,155,213,.2);}.bb:hover:not(:disabled){background:rgba(91,155,213,.2);}
+.bp{background:#1428A0;color:#fff;border:2px solid #1428A0;}.bp:hover:not(:disabled){background:#0F1F8A;border-color:#0F1F8A;}
+.bs{background:transparent;color:var(--txt);border:1.5px solid var(--txt);}.bs:hover:not(:disabled){background:var(--txt);color:#fff;}
+.br{background:transparent;color:var(--red);border:1px solid var(--red);}.br:hover:not(:disabled){background:var(--red);color:#fff;}
+.by{background:transparent;color:var(--gold);border:1px solid var(--gold);}.by:hover:not(:disabled){background:var(--gold);color:#fff;}
+.bb{background:rgba(20,40,160,.08);color:#1428A0;border:1px solid rgba(20,40,160,.2);}.bb:hover:not(:disabled){background:rgba(20,40,160,.15);}
 .bgh{background:transparent;border:none;color:var(--mut);}.bgh:hover{color:var(--txt);}
-.sm{padding:5px 10px;font-size:11px;}
-.inp{width:100%;padding:9px 12px;background:var(--sh);border:1px solid var(--border);border-radius:var(--rs);color:var(--txt);font-family:var(--fn);font-size:13px;outline:none;transition:border-color .14s;}
-.inp:focus{border-color:var(--accent);}
-.inp::placeholder{color:var(--dim);}
+.sm{padding:6px 12px;font-size:11px;}
+.inp{width:100%;padding:10px 14px;background:#fff;border:1px solid #D9D9D9;border-radius:0;color:var(--txt);font-family:var(--fn);font-size:13px;outline:none;transition:border-color .14s;}
+.inp:focus{border-color:#1428A0;}
+.inp::placeholder{color:#AEAEB2;}
 select.inp{appearance:none;cursor:pointer;}
 textarea.inp{resize:vertical;min-height:80px;}
-.lbl{display:block;font-size:10px;font-weight:700;color:var(--mut);letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px;}
-.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;}
-.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
-.bg{background:rgba(46,204,113,.12);color:var(--accent);border:1px solid rgba(46,204,113,.2);}
-.by2{background:rgba(240,192,64,.12);color:var(--gold);border:1px solid rgba(240,192,64,.2);}
-.br2{background:rgba(224,80,80,.12);color:var(--red);border:1px solid rgba(224,80,80,.2);}
-.bm{background:rgba(100,100,90,.1);color:var(--mut);border:1px solid var(--border);}
-.bb2{background:rgba(91,155,213,.12);color:var(--blue);border:1px solid rgba(91,155,213,.2);}
-.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;}
+.lbl{display:block;font-size:10px;font-weight:700;color:#636363;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;}
+.card{background:#fff;border:1px solid var(--border);border-radius:0;padding:18px 20px;}
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:2px;font-size:10px;font-weight:700;letter-spacing:.04em;}
+.bg{background:rgba(20,40,160,.08);color:#1428A0;}
+.bg2{background:rgba(22,163,74,.1);color:#15803d;}
+.by2{background:rgba(139,100,0,.1);color:#8B6400;}
+.br2{background:rgba(192,48,48,.1);color:var(--red);}
+.bb2{background:rgba(91,155,213,.1);color:#1d6fa4;}
+.bm{background:var(--sh);color:var(--mut);}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid #E5E5E5;border-top-color:#1428A0;border-radius:50%;animation:sp .7s linear infinite;}
 @keyframes sp{to{transform:rotate(360deg)}}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--surf);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50;}
-.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);font-size:18px;font-weight:800;letter-spacing:-.02em;}
-.sidebar-logo span{color:var(--accent);}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;font-weight:500;color:var(--mut);transition:all .14s;border-left:3px solid transparent;}
-.nav-item:hover{color:var(--txt);background:var(--sh);}
-.nav-item.on{color:var(--accent);background:rgba(46,204,113,.06);border-left-color:var(--accent);}
-.main{margin-left:220px;min-height:100vh;padding:28px 32px;}
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
-.page-title{font-size:22px;font-weight:800;}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:28px;}
-.stat-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;}
-.stat-val{font-size:26px;font-weight:800;line-height:1;margin-bottom:4px;}
-.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--mut);}
-table{width:100%;border-collapse:collapse;}
-thead th{padding:9px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);border-bottom:1px solid var(--border);}
-tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
-tbody tr:hover{background:var(--sh);}
-td{padding:11px 14px;font-size:13px;vertical-align:middle;}
-.tw{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:#fff;border-right:1px solid #E6E6E6;display:flex;flex-direction:column;z-index:50;}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid #E6E6E6;font-family:var(--fn);font-size:18px;font-weight:700;letter-spacing:-.02em;color:#1D1D1D;}
+.sidebar-logo span{color:#1428A0;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.04em;color:#636363;transition:all .14s;border-left:3px solid transparent;}
+.nav-item:hover{color:#1D1D1D;background:#F6F6F6;}
+.nav-item.on{color:#1428A0;background:rgba(20,40,160,.04);border-left-color:#1428A0;}
+.main{margin-left:220px;padding:32px 40px;min-height:100vh;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid #1428A0;}
+.page-title{font-size:22px;font-weight:700;letter-spacing:-.02em;color:#1D1D1D;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:28px;}
+.stat-card{background:#fff;border:1px solid #EBEBEB;border-radius:0;padding:18px 20px;}
+.stat-val{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1;}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#636363;margin-top:6px;}
+.tw{background:#fff;border:1px solid #E6E6E6;border-radius:0;overflow:hidden;}
 .ts{overflow-x:auto;}
-.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
-.modal{background:var(--surf);border:1px solid var(--border);border-radius:14px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;animation:mu .18s ease;}
-.modal.lg{max-width:760px;}
-@keyframes mu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-.mh{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surf);z-index:2;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#636363;border-bottom:1px solid #E6E6E6;background:#F6F6F6;}
+tbody tr{border-bottom:1px solid #F0F0F0;transition:background .1s;}
+tbody tr:hover{background:#F9F9F9;}
+tbody td{padding:11px 14px;font-size:13px;vertical-align:middle;}
+.sb{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px);}
+.modal{background:#fff;border:1px solid #E0E0E0;border-radius:0;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;animation:mu .18s ease;box-shadow:0 8px 40px rgba(0,0,0,.12);}
+@keyframes mu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.mh{padding:18px 24px 14px;border-bottom:1px solid #E6E6E6;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;}
 .mb{padding:20px 24px;}
-.mf{padding:12px 24px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
-.tab-row{display:flex;gap:2px;background:var(--bg);border-radius:var(--rs);padding:3px;margin-bottom:20px;overflow-x:auto;}
-.tab{padding:6px 14px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;color:var(--mut);transition:all .13s;white-space:nowrap;}
-.tab.on{background:var(--surf);color:var(--txt);}
-.sb{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
-.empty{text-align:center;padding:48px 20px;color:var(--mut);}
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;}
-.login-box{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:36px 32px;width:100%;max-width:380px;}
-@media(max-width:768px){.sidebar{width:100%;height:54px;flex-direction:row;bottom:auto;border-right:none;border-bottom:1px solid var(--border);overflow-x:auto;}.sidebar-logo{display:none;}.main{margin-left:0;margin-top:54px;padding:16px 12px;}.nav-item{padding:8px 12px;border-left:none;border-bottom:3px solid transparent;font-size:12px;}.nav-item.on{border-bottom-color:var(--accent);border-left-color:transparent;}}
+.mf{padding:12px 24px 18px;border-top:1px solid #E6E6E6;display:flex;gap:8px;justify-content:flex-end;}
+.tab-row{display:flex;gap:0;border-bottom:1px solid #E5E5E5;margin-bottom:20px;overflow-x:auto;}
+.tab{padding:10px 18px;border-radius:0;font-size:12px;font-weight:700;letter-spacing:.04em;cursor:pointer;color:#9E9E9E;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;transition:all .13s;}
+.tab.on{color:#1428A0;border-bottom-color:#1428A0;}
+.empty{text-align:center;padding:48px 20px;color:#9E9E9E;}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F4F4F4;}
+.login-box{background:#fff;border:1px solid #E6E6E6;border-radius:0;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+.alert-g{background:rgba(20,40,160,.04);border-left:3px solid #1428A0;padding:10px 14px;font-size:12px;color:#1428A0;margin-bottom:14px;}
+.alert-r{background:rgba(192,48,48,.04);border-left:3px solid #C03030;padding:10px 14px;font-size:12px;color:#C03030;margin-bottom:14px;}
+@media(max-width:768px){
+  .sidebar{width:100%;height:52px;flex-direction:row;bottom:auto;border-right:none;border-bottom:1px solid #E6E6E6;overflow-x:auto;}
+  .sidebar-logo{display:none;}
+  .main{margin-left:0;margin-top:52px;padding:16px 14px;}
+  .nav-item{padding:8px 12px;border-left:none;border-bottom:3px solid transparent;font-size:11px;}
+  .nav-item.on{border-bottom-color:#1428A0;border-left-color:transparent;}
+}
 `;
+
 
 const fmtKES = n => "KSh " + Number(n || 0).toLocaleString("en-KE");
 const ago = ts => { if (!ts) return "—"; const d = Date.now() - new Date(ts).getTime(); if (d < 3600000) return Math.floor(d/60000)+"m ago"; if (d < 86400000) return Math.floor(d/3600000)+"h ago"; return Math.floor(d/86400000)+"d ago"; };
@@ -85,7 +104,7 @@ function FF({label,children}){return <div style={{marginBottom:13}}>{label&&<lab
 
 function Toast({msg,ok,onClose}){
   useEffect(()=>{const t=setTimeout(onClose,4500);return()=>clearTimeout(t);},[]);
-  return <div style={{position:"fixed",bottom:20,right:20,zIndex:300,background:ok?"rgba(46,204,113,.15)":"rgba(224,80,80,.15)",border:`1px solid ${ok?"var(--accent)":"var(--red)"}`,borderRadius:"var(--r)",padding:"12px 18px",fontSize:13,display:"flex",gap:8,alignItems:"center",maxWidth:360}}><span>{ok?"✅":"❌"}</span><span>{msg}</span><button className="btn bgh sm" style={{marginLeft:"auto",padding:"2px 6px"}} onClick={onClose}>✕</button></div>;
+  return <div style={{position:"fixed",bottom:24,right:24,zIndex:300,background:"#fff",border:`1px solid ${ok?"#1428A0":"#C03030"}`,borderLeft:`4px solid ${ok?"#1428A0":"#C03030"}`,borderRadius:0,padding:"13px 18px",fontSize:13,fontFamily:"var(--fn)",display:"flex",gap:10,alignItems:"center",maxWidth:360,boxShadow:"0 4px 20px rgba(0,0,0,.1)"}}><span>{ok?"✅":"❌"}</span><span style={{flex:1}}>{msg}</span><button className="btn bgh sm" style={{padding:"2px 6px"}} onClick={onClose}>✕</button></div>;
 }
 
 function Modal({title,onClose,children,footer,large}){
@@ -110,12 +129,15 @@ function Login({onLogin}){
   };
   return <div className="login-wrap">
     <div className="login-box">
-      <div style={{fontSize:22,fontWeight:800,marginBottom:6}}>Weka<span style={{color:"var(--accent)"}}>Soko</span> <span style={{color:"var(--mut)",fontSize:14,fontWeight:500}}>Admin</span></div>
-      <p style={{color:"var(--mut)",fontSize:13,marginBottom:24}}>Sign in to manage the platform.</p>
-      {err&&<div style={{background:"rgba(224,80,80,.1)",border:"1px solid rgba(224,80,80,.2)",borderRadius:"var(--rs)",padding:"10px 13px",fontSize:12,color:"var(--red)",marginBottom:14}}>{err}</div>}
+      <div style={{textAlign:"center",marginBottom:28,paddingBottom:20,borderBottom:"1px solid #E6E6E6"}}>
+        <div style={{fontSize:24,fontWeight:700,letterSpacing:"-.02em",marginBottom:4}}>Weka<span style={{color:"#1428A0"}}>Soko</span></div>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:"#636363"}}>Admin Panel</div>
+      </div>
+      <p style={{color:"#636363",fontSize:13,marginBottom:20}}>Sign in to manage the platform.</p>
+      {err&&<div className="alert-r">{err}</div>}
       <FF label="Email"><input className="inp" type="email" placeholder="admin@wekasoko.co.ke" value={email} onChange={e=>setEmail(e.target.value)}/></FF>
       <FF label="Password"><input className="inp" type="password" placeholder="••••••••" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()}/></FF>
-      <button className="btn bp" style={{width:"100%",marginTop:6}} onClick={submit} disabled={loading}>{loading?<Spin/>:"Sign In →"}</button>
+      <button className="btn bp" style={{width:"100%",marginTop:8}} onClick={submit} disabled={loading}>{loading?<Spin/>:"Sign In →"}</button>
     </div>
   </div>;
 }
@@ -128,11 +150,11 @@ function Overview({token}){
   const {listings:L,users:U,payments:P,violations:V,escrows:E,disputes:D}=s;
   return <>
     <div className="stat-grid">
-      {[{l:"Total Users",v:U?.total||0,c:"var(--txt)"},{l:"Sellers",v:U?.sellers||0,c:"var(--accent)"},{l:"Buyers",v:U?.buyers||0,c:"var(--blue)"},{l:"Active Listings",v:L?.active||0,c:"var(--accent)"},{l:"Sold Items",v:L?.sold||0,c:"var(--gold)"},{l:"Unlock Revenue",v:fmtKES(P?.unlock_revenue),c:"var(--accent)",sm:true},{l:"Escrow Volume",v:fmtKES(P?.escrow_volume),c:"var(--blue)",sm:true},{l:"Active Escrows",v:E?.active||0,c:"var(--blue)"},{l:"Open Disputes",v:D?.open||0,c:"var(--red)"},{l:"Violations",v:V?.total||0,c:"var(--gold)"},{l:"Suspended",v:U?.suspended||0,c:"var(--red)"}].map(x=>(
+      {[{l:"Total Users",v:U?.total||0,c:"#1D1D1D"},{l:"Sellers",v:U?.sellers||0,c:"#1428A0"},{l:"Buyers",v:U?.buyers||0,c:"#1428A0"},{l:"Active Listings",v:L?.active||0,c:"#1428A0"},{l:"Sold Items",v:L?.sold||0,c:"#8B6400"},{l:"Unlock Revenue",v:fmtKES(P?.unlock_revenue),c:"#1428A0",sm:true},{l:"Escrow Volume",v:fmtKES(P?.escrow_volume),c:"#1428A0",sm:true},{l:"Active Escrows",v:E?.active||0,c:"#1428A0"},{l:"Open Disputes",v:D?.open||0,c:"#C03030"},{l:"Violations",v:V?.total||0,c:"#8B6400"},{l:"Suspended",v:U?.suspended||0,c:"#C03030"}].map(x=>(
         <div key={x.l} className="stat-card"><div className="stat-val" style={{color:x.c,fontSize:x.sm?15:26}}>{x.v}</div><div className="stat-lbl">{x.l}</div></div>
       ))}
     </div>
-    <div style={{background:"rgba(46,204,113,.06)",border:"1px solid rgba(46,204,113,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--accent)"}}>✓ Live data from Railway database. Refresh to update.</div>
+    <div style={{background:"rgba(20,40,160,.04)",border:"1px solid rgba(20,40,160,.2)",borderRadius:0,padding:"10px 14px",fontSize:12,color:"#1428A0"}}>✓ Live data from Railway database. Refresh to update.</div>
   </>;
 }
 
@@ -228,10 +250,10 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
         <div style={{background:"var(--sh)",borderRadius:"var(--rs)",padding:"10px 12px",fontSize:13,color:"var(--mut)"}}>{l.reason_for_sale}</div>
       </div>}
 
-      {l.is_unlocked&&<div style={{background:"rgba(46,204,113,.08)",border:"1px solid rgba(46,204,113,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--accent)"}}>
+      {l.is_unlocked&&<div style={{background:"rgba(20,40,160,.06)",border:"1px solid rgba(20,40,160,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--accent)"}}>
         🔓 Unlocked · Seller can see buyer contact
       </div>}
-      {!l.is_unlocked&&l.locked_buyer_id&&<div style={{background:"rgba(240,192,64,.08)",border:"1px solid rgba(240,192,64,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)"}}>
+      {!l.is_unlocked&&l.locked_buyer_id&&<div style={{background:"rgba(139,100,0,.06)",border:"1px solid rgba(139,100,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)"}}>
         🔥 Buyer has locked in — seller hasn't paid to unlock yet
       </div>}
 
@@ -241,7 +263,7 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
     </>}
 
     {tab==="edit"&&<>
-      <div style={{background:"rgba(240,192,64,.08)",border:"1px solid rgba(240,192,64,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>
+      <div style={{background:"rgba(139,100,0,.06)",border:"1px solid rgba(139,100,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>
         ⚠️ Any changes you save will be sent as a notification to the seller.
       </div>
       <FF label="Title"><input className="inp" value={f.title} onChange={e=>sf("title",e.target.value)}/></FF>
@@ -276,7 +298,7 @@ function Users({token,notify}){
     if(!window.confirm(`Permanently delete "${name}"? All their listings and data will be gone.`))return;
     try{await req(`/api/admin/users/${id}`,{method:"DELETE"},token);setUsers(p=>p.filter(u=>u.id!==id));notify("User deleted.",true);}catch(e){notify(e.message,false);}
   };
-  const filtered=users.filter(u=>!q||u.name?.toLowerCase().includes(q.toLowerCase())||u.email?.toLowerCase().includes(q.toLowerCase()));
+  const filtered=users.filter(u=>u.role!=='admin'&&(!q||u.name?.toLowerCase().includes(q.toLowerCase())||u.email?.toLowerCase().includes(q.toLowerCase())));
   return <>
     <div className="sb"><input className="inp" style={{flex:1,maxWidth:320}} placeholder="Search by name or email..." value={q} onChange={e=>setQ(e.target.value)}/><span style={{fontSize:12,color:"var(--mut)",alignSelf:"center"}}>{filtered.length} users</span></div>
     <div className="tw">{loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:
@@ -358,7 +380,7 @@ function Violations({token,notify}){
   useEffect(()=>{req("/api/admin/violations?reviewed=false",{},token).then(setViolations).catch(()=>{}).finally(()=>setLoading(false));},[token]);
   const review=async(id,action)=>{try{await req(`/api/admin/violations/${id}/review`,{method:"POST",body:JSON.stringify({action})},token);setViolations(p=>p.filter(v=>v.id!==id));notify(`Action: ${action}.`,true);}catch(e){notify(e.message,false);}};
   return <>
-    <div style={{background:"rgba(240,192,64,.08)",border:"1px solid rgba(240,192,64,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>⚠️ {violations.length} unreviewed violation{violations.length!==1?"s":""}</div>
+    <div style={{background:"rgba(139,100,0,.06)",border:"1px solid rgba(139,100,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>⚠️ {violations.length} unreviewed violation{violations.length!==1?"s":""}</div>
     <div className="tw">{loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:violations.length===0?<div className="empty">✅ No unreviewed violations</div>:
       <div className="ts"><table>
         <thead><tr><th>User</th><th>Severity</th><th>Listing</th><th>Reason</th><th>Time</th><th>Actions</th></tr></thead>
@@ -569,7 +591,7 @@ function AdminInvites({token,notify}){
           {LEVELS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
         </select>
       </FF>
-      <div style={{marginTop:4,padding:"10px 12px",background:"var(--surf)",borderRadius:"var(--rs)",fontSize:12,color:"var(--mut)"}}>
+      <div style={{marginTop:4,padding:"10px 12px",background:"#fff",borderRadius:"var(--rs)",fontSize:12,color:"var(--mut)"}}>
         {{
           viewer:"Can view all data. Cannot make changes.",
           moderator:"Can review violations, manage listings, and view users.",
@@ -632,18 +654,19 @@ export default function AdminApp(){
 
   return <>
     <div className="sidebar">
-      <div className="sidebar-logo">Weka<span>Soko</span></div>
+      <div className="sidebar-logo">Weka<span>Soko</span> <span style={{fontSize:10,fontWeight:700,letterSpacing:".08em",color:"#636363",textTransform:"uppercase",verticalAlign:"middle"}}>Admin</span></div>
       {SECTIONS.map(s=><div key={s.id} className={`nav-item${section===s.id?" on":""}`} onClick={()=>setSection(s.id)}><span>{s.icon}</span><span>{s.label}</span></div>)}
       <div style={{flex:1}}/>
-      <div style={{padding:"14px 20px",borderTop:"1px solid var(--border)",fontSize:12}}>
-        <div style={{color:"var(--mut)",marginBottom:6}}>Signed in as<br/><strong style={{color:"var(--txt)"}}>{user.name}</strong></div>
-        <button className="btn br sm" style={{width:"100%"}} onClick={logout}>Sign Out</button>
+      <div style={{padding:"16px 20px",borderTop:"1px solid #E6E6E6"}}>
+        <div style={{fontSize:11,color:"#636363",marginBottom:2,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase"}}>Signed in as</div>
+        <div style={{fontWeight:700,fontSize:13,marginBottom:10,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.name}</div>
+        <button className="btn bs sm" style={{width:"100%"}} onClick={logout}>Sign Out</button>
       </div>
     </div>
     <div className="main">
       <div className="page-header">
         <h1 className="page-title">{cur?.icon} {cur?.label}</h1>
-        <div style={{fontSize:12,color:"var(--mut)"}}>Live · {new Date().toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"long"})}</div>
+        <div style={{fontSize:12,color:"#636363"}}>Live · {new Date().toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"long"})}</div>
       </div>
       {section==="overview"&&<Overview token={token}/>}
       {section==="users"&&<Users token={token} notify={notify}/>}
