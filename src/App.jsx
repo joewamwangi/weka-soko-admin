@@ -286,6 +286,170 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
   </Modal>;
 }
 
+// ── REVIEW QUEUE ─────────────────────────────────────────────────────────────
+function ReviewQueue({token,notify}){
+  const [listings,setListings]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [selected,setSelected]=useState(null);
+  const [rejectReason,setRejectReason]=useState("");
+  const [changeNote,setChangeNote]=useState("");
+  const [action,setAction]=useState(null); // "reject" | "changes"
+  const [submitting,setSubmitting]=useState(false);
+
+  const load=()=>{
+    setLoading(true);
+    req("/api/admin/moderation/queue",{},token)
+      .then(d=>{setListings(d.listings||[]);})
+      .catch(()=>{}).finally(()=>setLoading(false));
+  };
+  useEffect(()=>{load();},[token]);
+
+  const approve=async id=>{
+    setSubmitting(true);
+    try{
+      await req(`/api/admin/moderation/${id}/approve`,{method:"POST"},token);
+      setListings(p=>p.filter(l=>l.id!==id));
+      setSelected(null);
+      notify("✅ Listing approved and live!",true);
+    }catch(e){notify(e.message,false);}
+    finally{setSubmitting(false);}
+  };
+
+  const reject=async id=>{
+    if(!rejectReason.trim()){notify("Enter a rejection reason.",false);return;}
+    setSubmitting(true);
+    try{
+      await req(`/api/admin/moderation/${id}/reject`,{method:"POST",body:JSON.stringify({reason:rejectReason.trim()})},token);
+      setListings(p=>p.filter(l=>l.id!==id));
+      setSelected(null);setAction(null);setRejectReason("");
+      notify("❌ Listing rejected, seller notified.",true);
+    }catch(e){notify(e.message,false);}
+    finally{setSubmitting(false);}
+  };
+
+  const requestChanges=async id=>{
+    if(!changeNote.trim()){notify("Enter a note for the seller.",false);return;}
+    setSubmitting(true);
+    try{
+      await req(`/api/admin/moderation/${id}/request-changes`,{method:"POST",body:JSON.stringify({note:changeNote.trim()})},token);
+      setListings(p=>p.filter(l=>l.id!==id));
+      setSelected(null);setAction(null);setChangeNote("");
+      notify("✏️ Change request sent to seller.",true);
+    }catch(e){notify(e.message,false);}
+    finally{setSubmitting(false);}
+  };
+
+  const fmtKES=n=>"KSh "+Number(n||0).toLocaleString("en-KE");
+
+  if(loading)return <div style={{textAlign:"center",padding:60}}><Spin/></div>;
+
+  return <>
+    {listings.length===0
+      ?<div className="empty">
+          <div style={{fontSize:48,marginBottom:12,opacity:.2}}>✅</div>
+          <div style={{fontWeight:700,fontSize:16,marginBottom:6}}>All caught up!</div>
+          <div style={{fontSize:13,color:"#636363"}}>No listings pending review</div>
+        </div>
+      :<>
+        <div style={{fontSize:13,color:"#636363",marginBottom:16,fontWeight:600}}>{listings.length} listing{listings.length!==1?"s":""} awaiting review</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14}}>
+          {listings.map(l=>{
+            const photos=l.photos||[];
+            const cover=Array.isArray(photos)?photos[0]:null;
+            return <div key={l.id} style={{background:"#fff",border:`1px solid ${selected?.id===l.id?"#1428A0":"#E6E6E6"}`,borderRadius:0,overflow:"hidden",cursor:"pointer",transition:"border-color .15s"}}
+              onClick={()=>{setSelected(l);setAction(null);setRejectReason("");setChangeNote("");}}>
+              <div style={{height:160,background:"#F4F4F4",position:"relative",overflow:"hidden"}}>
+                {cover?<img src={cover} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                  :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:40,opacity:.15}}>📦</div>}
+                <span className="badge bm" style={{position:"absolute",top:8,right:8,fontSize:10}}>{l.category}</span>
+              </div>
+              <div style={{padding:"12px 14px"}}>
+                <div style={{fontWeight:700,fontSize:14,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.title}</div>
+                <div style={{fontSize:13,fontWeight:700,color:"#1428A0",marginBottom:4}}>{fmtKES(l.price)}</div>
+                <div style={{fontSize:11,color:"#636363"}}>{l.seller_name} · {ago(l.created_at)}</div>
+              </div>
+            </div>;
+          })}
+        </div>
+      </>
+    }
+
+    {/* Detail panel */}
+    {selected&&<Modal title={`Review: ${selected.title}`} onClose={()=>{setSelected(null);setAction(null);}} large>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+        <div>
+          {/* Photos */}
+          <div style={{aspectRatio:"4/3",background:"#F4F4F4",overflow:"hidden",marginBottom:8}}>
+            {(selected.photos||[])[0]
+              ?<img src={(selected.photos||[])[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+              :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:48,opacity:.1}}>📦</div>}
+          </div>
+          {(selected.photos||[]).length>1&&<div style={{display:"flex",gap:4,overflowX:"auto"}}>
+            {(selected.photos||[]).slice(1).map((p,i)=><img key={i} src={p} alt="" style={{width:56,height:44,objectFit:"cover",flexShrink:0,borderRadius:0}}/>)}
+          </div>}
+        </div>
+        <div>
+          <div style={{marginBottom:12}}>
+            <div className="lbl">Price</div>
+            <div style={{fontSize:20,fontWeight:700,color:"#1428A0"}}>{fmtKES(selected.price)}</div>
+          </div>
+          <div style={{marginBottom:12}}>
+            <div className="lbl">Category</div>
+            <div style={{fontSize:13}}>{selected.category}{selected.subcat?" → "+selected.subcat:""}</div>
+          </div>
+          <div style={{marginBottom:12}}>
+            <div className="lbl">Location</div>
+            <div style={{fontSize:13}}>📍 {selected.location||"—"}{selected.county?", "+selected.county:""}</div>
+          </div>
+          <div style={{marginBottom:12}}>
+            <div className="lbl">Seller</div>
+            <div style={{fontSize:13}}>{selected.seller_name}</div>
+            <div style={{fontSize:11,color:"#636363"}}>{selected.seller_email}</div>
+          </div>
+          <div>
+            <div className="lbl">Submitted</div>
+            <div style={{fontSize:12,color:"#636363"}}>{new Date(selected.created_at).toLocaleString("en-KE")}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{marginBottom:12}}>
+        <div className="lbl">Description</div>
+        <div style={{fontSize:13,lineHeight:1.7,color:"#1D1D1D",background:"#F6F6F6",padding:"10px 12px"}}>{selected.description}</div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <div className="lbl">Reason for Sale</div>
+        <div style={{fontSize:13,color:"#636363"}}>{selected.reason_for_sale||"—"}</div>
+      </div>
+
+      {/* Action buttons */}
+      {!action&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <button className="btn bp" onClick={()=>approve(selected.id)} disabled={submitting}>{submitting?<Spin/>:"✅ Approve — Go Live"}</button>
+        <button className="btn by sm" onClick={()=>setAction("changes")}>✏️ Request Changes</button>
+        <button className="btn br sm" onClick={()=>setAction("reject")}>❌ Reject</button>
+      </div>}
+
+      {action==="reject"&&<div>
+        <div className="lbl" style={{marginBottom:6}}>Rejection Reason <span style={{color:"#C03030"}}>*</span></div>
+        <textarea className="inp" rows={3} placeholder="Tell the seller why their listing was not approved..." value={rejectReason} onChange={e=>setRejectReason(e.target.value)} style={{marginBottom:10}}/>
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn bs sm" onClick={()=>setAction(null)}>Cancel</button>
+          <button className="btn br" onClick={()=>reject(selected.id)} disabled={submitting||!rejectReason.trim()}>{submitting?<Spin/>:"Confirm Rejection"}</button>
+        </div>
+      </div>}
+
+      {action==="changes"&&<div>
+        <div className="lbl" style={{marginBottom:6}}>Changes Needed <span style={{color:"#C03030"}}>*</span></div>
+        <textarea className="inp" rows={3} placeholder="Tell the seller what they need to fix before the listing can go live..." value={changeNote} onChange={e=>setChangeNote(e.target.value)} style={{marginBottom:10}}/>
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn bs sm" onClick={()=>setAction(null)}>Cancel</button>
+          <button className="btn by" onClick={()=>requestChanges(selected.id)} disabled={submitting||!changeNote.trim()}>{submitting?<Spin/>:"Send Change Request"}</button>
+        </div>
+      </div>}
+    </Modal>}
+  </>;
+}
+
 function Users({token,notify}){
   const [users,setUsers]=useState([]);const [loading,setLoading]=useState(true);const [q,setQ]=useState("");
   useEffect(()=>{
@@ -624,6 +788,7 @@ function AdminInvites({token,notify}){
 
 const SECTIONS=[
   {id:"overview",icon:"📊",label:"Overview"},
+  {id:"review",icon:"🔍",label:"Review Queue"},
   {id:"users",icon:"👥",label:"Users"},
   {id:"listings",icon:"📦",label:"Listings"},
   {id:"reports",icon:"🚩",label:"Reports"},
@@ -669,6 +834,7 @@ export default function AdminApp(){
         <div style={{fontSize:12,color:"#636363"}}>Live · {new Date().toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"long"})}</div>
       </div>
       {section==="overview"&&<Overview token={token}/>}
+      {section==="review"&&<ReviewQueue token={token} notify={notify}/>}
       {section==="users"&&<Users token={token} notify={notify}/>}
       {section==="listings"&&<Listings token={token} notify={notify}/>}
       {section==="reports"&&<Reports token={token} notify={notify}/>}
