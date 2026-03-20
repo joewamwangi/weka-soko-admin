@@ -691,19 +691,27 @@ function Escrow({token,notify}){
 }
 
 // ── SOLD LISTINGS ─────────────────────────────────────────────────────────────
-function SoldListings({token}){
+function SoldListings({token,notify}){
   const [items,setItems]=useState([]);
   const [loading,setLoading]=useState(true);
   const [pg,setPg]=useState(1);
   const [total,setTotal]=useState(0);
+  const [q,setQ]=useState("");
+  const [selected,setSelected]=useState(null);
+  const [actionInProgress,setActionInProgress]=useState(false);
   const PER=30;
 
-  useEffect(()=>{
+  const load=()=>{
     setLoading(true);
-    req(`/api/admin/sold?page=${pg}&limit=${PER}`,{},token)
+    const params=new URLSearchParams({page:pg,limit:PER});
+    if(q)params.set("q",q);
+    req(`/api/admin/sold?${params}`,{},token)
       .then(d=>{setItems(d.listings||[]);setTotal(d.total||0);})
-      .catch(()=>{}).finally(()=>setLoading(false));
-  },[pg,token]);
+      .catch(()=>notify?.("Failed to load sold listings",false))
+      .finally(()=>setLoading(false));
+  };
+
+  useEffect(()=>load(),[pg,q,token]);
 
   const fmtDate=ts=>ts?new Date(ts).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"}):"—";
   const duration=(created,sold)=>{
@@ -716,18 +724,49 @@ function SoldListings({token}){
     return`${Math.floor(days/30)}mo`;
   };
 
+  const restore=async id=>{
+    if(!window.confirm("Restore this listing to active status?"))return;
+    try{
+      setActionInProgress(true);
+      await req(`/api/admin/listings/${id}`,{method:"PATCH",body:JSON.stringify({status:"active"})},token);
+      setItems(p=>p.filter(l=>l.id!==id));
+      setTotal(p=>p-1);
+      notify?.("Listing restored to active",true);
+    }catch(e){
+      notify?.(e.message,false);
+    }finally{
+      setActionInProgress(false);
+    }
+  };
+
+  const deleteListing=async id=>{
+    if(!window.confirm("Permanently delete this listing?"))return;
+    try{
+      setActionInProgress(true);
+      await req(`/api/admin/listings/${id}`,{method:"DELETE"},token);
+      setItems(p=>p.filter(l=>l.id!==id));
+      setTotal(p=>p-1);
+      notify?.("Listing deleted",true);
+    }catch(e){
+      notify?.(e.message,false);
+    }finally{
+      setActionInProgress(false);
+    }
+  };
+
   return <>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,gap:12,flexWrap:"wrap"}}>
       <div style={{fontSize:13,color:"#636363",fontWeight:600}}>{total} sold listing{total!==1?"s":""}</div>
+      <input type="text" className="inp" placeholder="Search by title, seller..." value={q} onChange={e=>{setQ(e.target.value);setPg(1);}} style={{maxWidth:300,fontSize:12}}/>
     </div>
     <div className="tw">
       {loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:
-      items.length===0?<div className="empty">No sold listings yet</div>:
+      items.length===0?<div className="empty">No sold listings found</div>:
       <div className="ts"><table>
         <thead><tr>
           <th>Item</th><th>Price</th><th>Category</th>
           <th>Listed</th><th>Sold</th><th>Time to Sell</th>
-          <th>Channel</th><th>Seller</th>
+          <th>Channel</th><th>Seller</th><th>Buyer</th><th>Actions</th>
         </tr></thead>
         <tbody>{items.map(l=>{
           const photo=Array.isArray(l.photos)?l.photos[0]:null;
@@ -735,7 +774,7 @@ function SoldListings({token}){
             <td>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <div style={{width:40,height:32,background:"#F4F4F4",overflow:"hidden",flexShrink:0}}>
-                  {photo&&<img src={typeof photo==="string"?photo:photo?.url||photo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>}
+                  {photo&&<img src={typeof photo==="string"?photo:photo?.url||photo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
                 </div>
                 <div style={{fontWeight:600,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>{l.title}</div>
               </div>
@@ -752,6 +791,14 @@ function SoldListings({token}){
               :<span style={{fontSize:11,color:"#AEAEB2"}}>—</span>}
             </td>
             <td style={{fontSize:12,color:"#636363"}}>{l.seller_name||"—"}</td>
+            <td style={{fontSize:12,color:"#636363"}}>{l.buyer_name||"—"}</td>
+            <td>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                <button className="btn bs sm" onClick={()=>setSelected(l)} disabled={actionInProgress}>👁 View</button>
+                <button className="btn bp sm" onClick={()=>restore(l.id)} disabled={actionInProgress}>↩ Restore</button>
+                <button className="btn br sm" onClick={()=>deleteListing(l.id)} disabled={actionInProgress}>🗑 Delete</button>
+              </div>
+            </td>
           </tr>;
         })}</tbody>
       </table></div>}
@@ -761,6 +808,70 @@ function SoldListings({token}){
       <span style={{padding:"6px 12px",fontSize:12,color:"#636363"}}>Page {pg} of {Math.ceil(total/PER)}</span>
       {pg<Math.ceil(total/PER)&&<button className="btn bs sm" onClick={()=>setPg(p=>p+1)}>Next →</button>}
     </div>}
+
+    {selected&&<Modal title={`Sold Listing: ${selected.title}`} onClose={()=>setSelected(null)} large>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+        <div>
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:12,color:"#636363",marginBottom:4}}>Photos</div>
+            {selected.photos&&selected.photos.length>0?
+              <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+                {selected.photos.slice(0,4).map((p,i)=>
+                  <img key={i} src={typeof p==="string"?p:p?.url||p} alt="" style={{width:"100%",height:120,objectFit:"cover",borderRadius:4}}/>
+                )}
+              </div>
+              :<div style={{padding:16,background:"#F4F4F4",textAlign:"center",color:"#AEAEB2",fontSize:12}}>No photos</div>
+            }
+          </div>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:12,color:"#636363",marginBottom:4}}>Description</div>
+            <div style={{fontSize:13,lineHeight:1.6,color:"#333"}}>{selected.description||"—"}</div>
+          </div>
+        </div>
+        <div>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>TITLE</div>
+            <div style={{fontSize:14,fontWeight:700}}>{selected.title}</div>
+          </div>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>PRICE</div>
+            <div style={{fontSize:16,fontWeight:700,color:"#1428A0"}}>{fmtKES(selected.price)}</div>
+          </div>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>CATEGORY</div>
+            <div style={{fontSize:13}}>{selected.category}</div>
+          </div>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>LOCATION</div>
+            <div style={{fontSize:13}}>{selected.location}, {selected.county}</div>
+          </div>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>SELLER</div>
+            <div style={{fontSize:13}}>{selected.seller_name} ({selected.seller_email})</div>
+          </div>
+          {selected.buyer_name&&<div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>BUYER</div>
+            <div style={{fontSize:13}}>{selected.buyer_name} ({selected.buyer_email})</div>
+          </div>}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>SOLD CHANNEL</div>
+            <div style={{fontSize:13}}>{selected.sold_channel==="platform"?"🛒 Via Weka Soko":selected.sold_channel==="outside"?"🤝 Outside Platform":"—"}</div>
+          </div>
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>LISTED</div>
+            <div style={{fontSize:13}}>{fmtDate(selected.created_at)}</div>
+          </div>
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>SOLD</div>
+            <div style={{fontSize:13}}>{fmtDate(selected.sold_at)}</div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button className="btn bp" onClick={()=>restore(selected.id)} disabled={actionInProgress} style={{flex:1}}>{actionInProgress?<Spin/>:"↩ Restore to Active"}</button>
+            <button className="btn br" onClick={()=>{deleteListing(selected.id);setSelected(null);}} disabled={actionInProgress} style={{flex:1}}>{actionInProgress?<Spin/>:"🗑 Delete"}</button>
+          </div>
+        </div>
+      </div>
+    </Modal>}
   </>;
 }
 
