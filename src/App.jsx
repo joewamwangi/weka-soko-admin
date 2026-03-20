@@ -799,7 +799,7 @@ function SoldListings({token,notify}){
                 <button className="btn br sm" onClick={()=>deleteListing(l.id)} disabled={actionInProgress}>🗑 Delete</button>
               </div>
             </td>
-          </tr>;
+          </tr>
         })}</tbody>
       </table></div>}
     </div>
