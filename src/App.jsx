@@ -696,22 +696,17 @@ function SoldListings({token,notify}){
   const [loading,setLoading]=useState(true);
   const [pg,setPg]=useState(1);
   const [total,setTotal]=useState(0);
-  const [q,setQ]=useState("");
   const [selected,setSelected]=useState(null);
   const [actionInProgress,setActionInProgress]=useState(false);
   const PER=30;
 
-  const load=()=>{
+  useEffect(()=>{
     setLoading(true);
-    const params=new URLSearchParams({page:pg,limit:PER});
-    if(q)params.set("q",q);
-    req(`/api/admin/sold?${params}`,{},token)
+    req(`/api/admin/sold?page=${pg}&limit=${PER}`,{},token)
       .then(d=>{setItems(d.listings||[]);setTotal(d.total||0);})
       .catch(()=>notify?.("Failed to load sold listings",false))
       .finally(()=>setLoading(false));
-  };
-
-  useEffect(()=>load(),[pg,q,token]);
+  },[pg,token]);
 
   const fmtDate=ts=>ts?new Date(ts).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"}):"—";
   const duration=(created,sold)=>{
@@ -755,9 +750,8 @@ function SoldListings({token,notify}){
   };
 
   return <>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,gap:12,flexWrap:"wrap"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
       <div style={{fontSize:13,color:"#636363",fontWeight:600}}>{total} sold listing{total!==1?"s":""}</div>
-      <input type="text" className="inp" placeholder="Search by title, seller..." value={q} onChange={e=>{setQ(e.target.value);setPg(1);}} style={{maxWidth:300,fontSize:12}}/>
     </div>
     <div className="tw">
       {loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:
