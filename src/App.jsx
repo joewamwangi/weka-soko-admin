@@ -700,7 +700,7 @@ function SoldListings({token}){
 
   useEffect(()=>{
     setLoading(true);
-    req(`/api/listings/admin/sold?page=${pg}&limit=${PER}`,{},token)
+    req(`/api/admin/sold?page=${pg}&limit=${PER}`,{},token)
       .then(d=>{setItems(d.listings||[]);setTotal(d.total||0);})
       .catch(()=>{}).finally(()=>setLoading(false));
   },[pg,token]);
@@ -765,59 +765,149 @@ function SoldListings({token}){
 }
 
 // ── BUYER REQUESTS ────────────────────────────────────────────────────────────
-function BuyerRequests({token}){
+function BuyerRequests({token,notify}){
   const [items,setItems]=useState([]);
   const [loading,setLoading]=useState(true);
   const [total,setTotal]=useState(0);
-  const [filter,setFilter]=useState("active");
+  const [filter,setFilter]=useState("all");
+  const [q,setQ]=useState("");
+  const [selected,setSelected]=useState(null);
+  const [pitches,setPitches]=useState([]);
+  const [pitchLoading,setPitchLoading]=useState(false);
+  const [deleting,setDeleting]=useState(false);
+  const [statusSaving,setStatusSaving]=useState(false);
 
-  useEffect(()=>{
+  const load=()=>{
     setLoading(true);
-    req(`/api/admin/requests?limit=50&status=${filter}`,{},token)
+    const params=new URLSearchParams({limit:100});
+    if(filter!=="all")params.set("status",filter);
+    req(`/api/admin/requests?${params}`,{},token)
       .then(d=>{setItems(d.requests||[]);setTotal(d.total||0);})
       .catch(()=>{}).finally(()=>setLoading(false));
-  },[filter,token]);
+  };
+  useEffect(()=>{load();},[filter,token]);
 
-  const fmtDate=ts=>ts?new Date(ts).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"}):"—";
+  const loadPitches=async(requestId)=>{
+    setPitchLoading(true);
+    try{const d=await req(`/api/admin/requests/${requestId}/pitches`,{},token);setPitches(d.pitches||[]);}
+    catch(e){setPitches([]);}
+    finally{setPitchLoading(false);}
+  };
+
+  const openDetail=r=>{setSelected(r);setPitches([]);loadPitches(r.id);};
+
+  const changeStatus=async(id,status)=>{
+    setStatusSaving(true);
+    try{
+      await req(`/api/admin/requests/${id}/status`,{method:"PATCH",body:JSON.stringify({status})},token);
+      setItems(p=>p.map(r=>r.id===id?{...r,status}:r));
+      if(selected?.id===id)setSelected(p=>({...p,status}));
+      notify(`Request ${status}.`,true);
+    }catch(e){notify(e.message,false);}
+    finally{setStatusSaving(false);}
+  };
+
+  const deleteRequest=async(id)=>{
+    if(!window.confirm("Permanently delete this buyer request and all its pitches?"))return;
+    setDeleting(true);
+    try{
+      await req(`/api/admin/requests/${id}`,{method:"DELETE"},token);
+      setItems(p=>p.filter(r=>r.id!==id));
+      setTotal(t=>t-1);
+      setSelected(null);
+      notify("Request deleted.",true);
+    }catch(e){notify(e.message,false);}
+    finally{setDeleting(false);}
+  };
+
+  const fmtDate=ts=>ts?new Date(ts).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"}):"-";
+  const sc=s=>({active:"bg2",closed:"bm",archived:"by2",expired:"br2"}[s]||"bm");
+  const filtered=items.filter(r=>!q||r.title?.toLowerCase().includes(q.toLowerCase())||r.description?.toLowerCase().includes(q.toLowerCase())||r.requester_anon?.toLowerCase().includes(q.toLowerCase()));
 
   return <>
-    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,flexWrap:"wrap"}}>
-      <div style={{fontSize:13,color:"#636363",fontWeight:600,flex:1}}>{total} buyer request{total!==1?"s":""}</div>
-      <div style={{display:"flex",gap:4}}>
-        {["active","all"].map(f=><button key={f} className={`btn sm ${filter===f?"bp":"bs"}`}
-          onClick={()=>setFilter(f)} style={{fontSize:11,padding:"5px 12px",textTransform:"capitalize"}}>{f}</button>)}
-      </div>
+    <div className="sb" style={{marginBottom:16}}>
+      <input className="inp" style={{flex:1,maxWidth:280}} placeholder="Search requests..." value={q} onChange={e=>setQ(e.target.value)}/>
+      <select className="inp" style={{width:140}} value={filter} onChange={e=>setFilter(e.target.value)}>
+        <option value="all">All Statuses</option>
+        <option value="active">Active</option>
+        <option value="closed">Closed</option>
+        <option value="archived">Archived</option>
+        <option value="expired">Expired</option>
+      </select>
+      <span style={{fontSize:12,color:"#636363",alignSelf:"center"}}>{total} request{total!==1?"s":""}</span>
     </div>
     <div className="tw">
       {loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:
-      items.length===0?<div className="empty">No buyer requests found</div>:
+      filtered.length===0?<div className="empty">No buyer requests found</div>:
       <div className="ts"><table>
         <thead><tr>
-          <th>Request</th><th>Budget</th><th>County</th>
-          <th>Pitches</th><th>Status</th><th>Posted</th>
+          <th>Request</th><th>Budget</th><th>County</th><th>Pitches</th><th>Status</th><th>Posted</th><th>Actions</th>
         </tr></thead>
-        <tbody>{items.map(r=><tr key={r.id}>
+        <tbody>{filtered.map(r=><tr key={r.id}>
           <td>
-            <div style={{fontWeight:600,fontSize:13,marginBottom:3}}>{r.title}</div>
-            <div style={{fontSize:11,color:"#636363",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:280}}>
+            <div style={{fontWeight:600,fontSize:13,marginBottom:3,cursor:"pointer",color:"#1428A0"}} onClick={()=>openDetail(r)}>{r.title}</div>
+            <div style={{fontSize:11,color:"#636363",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:260}}>
               {r.description?.slice(0,80)}{r.description?.length>80?"...":""}
             </div>
+            <div style={{fontSize:11,color:"#ADADAD",marginTop:2}}>by {r.requester_anon||"Anonymous"}</div>
           </td>
           <td style={{fontWeight:700,color:"#1428A0"}}>{r.budget?fmtKES(r.budget):"—"}</td>
           <td style={{fontSize:12,color:"#636363"}}>{r.county||"Any"}</td>
           <td style={{textAlign:"center"}}>
-            <span className={`badge ${parseInt(r.pitch_count)>0?"bg":"bm"}`} style={{fontSize:11}}>
-              {r.pitch_count||0}
-            </span>
+            <span className={`badge ${parseInt(r.pitch_count)>0?"bg":"bm"}`} style={{fontSize:11}}>{r.pitch_count||0}</span>
           </td>
-          <td><span className={`badge ${r.status==="active"?"bg2":"bm"}`} style={{fontSize:10}}>{r.status}</span></td>
+          <td><span className={`badge ${sc(r.status)}`} style={{fontSize:10}}>{r.status}</span></td>
           <td style={{fontSize:12,color:"#636363",whiteSpace:"nowrap"}}>{fmtDate(r.created_at)}</td>
+          <td><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+            <button className="btn bs sm" onClick={()=>openDetail(r)}>👁 View</button>
+            {r.status==="active"&&<button className="btn bm sm" onClick={()=>changeStatus(r.id,"closed")} disabled={statusSaving}>Close</button>}
+            {r.status==="closed"&&<button className="btn bg2 sm" onClick={()=>changeStatus(r.id,"active")} disabled={statusSaving}>Reopen</button>}
+            {r.status!=="archived"&&<button className="btn by sm" onClick={()=>changeStatus(r.id,"archived")} disabled={statusSaving}>Archive</button>}
+            <button className="btn br sm" onClick={()=>deleteRequest(r.id)} disabled={deleting}>Delete</button>
+          </div></td>
         </tr>)}</tbody>
       </table></div>}
     </div>
+    {selected&&<Modal title="Buyer Request Detail" onClose={()=>setSelected(null)} large>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+        <div><div className="lbl">Title</div><div style={{fontWeight:700,fontSize:15}}>{selected.title}</div></div>
+        <div><div className="lbl">Status</div><span className={`badge ${sc(selected.status)}`}>{selected.status}</span></div>
+        <div><div className="lbl">Budget</div><div style={{fontWeight:700,color:"#1428A0",fontSize:18}}>{selected.budget?fmtKES(selected.budget):"Not specified"}</div></div>
+        <div><div className="lbl">Location</div><div style={{fontSize:13}}>📍 {selected.county||"Any county"}</div></div>
+        <div><div className="lbl">Posted by</div><div style={{fontSize:13}}>{selected.requester_anon||"Anonymous"}</div></div>
+        <div><div className="lbl">Posted on</div><div style={{fontSize:13}}>{fmtDate(selected.created_at)}</div></div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <div className="lbl">Description</div>
+        <div style={{background:"#F6F6F6",padding:"12px 14px",fontSize:13,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{selected.description}</div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <div style={{fontWeight:700,fontSize:13,marginBottom:10}}>Seller Pitches ({pitches.length})</div>
+        {pitchLoading?<div style={{textAlign:"center",padding:20}}><Spin/></div>:
+        pitches.length===0?<div style={{fontSize:13,color:"#636363",padding:"10px 0"}}>No pitches submitted yet</div>:
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {pitches.map(p=><div key={p.id} style={{background:"#F6F6F6",padding:"12px 14px",border:"1px solid #E6E6E6"}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+              <span style={{fontWeight:600,fontSize:13}}>{p.seller_anon||"Seller"}</span>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                {p.offered_price&&<span style={{fontWeight:700,color:"#1428A0",fontSize:13}}>{fmtKES(p.offered_price)}</span>}
+                <span className={`badge ${p.status==="accepted"?"bg2":p.status==="rejected"?"br2":"bm"}`} style={{fontSize:10}}>{p.status}</span>
+              </div>
+            </div>
+            <div style={{fontSize:12,color:"#535353",lineHeight:1.7}}>{p.message}</div>
+            <div style={{fontSize:11,color:"#ADADAD",marginTop:4}}>{fmtDate(p.created_at)}</div>
+          </div>)}
+        </div>}
+      </div>
+      <div style={{borderTop:"1px solid #E6E6E6",paddingTop:14,display:"flex",gap:8,flexWrap:"wrap"}}>
+        {selected.status==="active"&&<button className="btn bs" onClick={()=>changeStatus(selected.id,"closed")} disabled={statusSaving}>{statusSaving?<Spin/>:"Close Request"}</button>}
+        {selected.status==="closed"&&<button className="btn bg2" onClick={()=>changeStatus(selected.id,"active")} disabled={statusSaving}>{statusSaving?<Spin/>:"Reopen Request"}</button>}
+        {selected.status!=="archived"&&<button className="btn by" onClick={()=>changeStatus(selected.id,"archived")} disabled={statusSaving}>{statusSaving?<Spin/>:"Archive"}</button>}
+        <button className="btn br" onClick={()=>deleteRequest(selected.id)} disabled={deleting}>{deleting?<Spin/>:"🗑 Delete Request"}</button>
+      </div>
+    </Modal>}
   </>;
 }
-
 function Payments({token}){
   const [payments,setPayments]=useState([]);const [loading,setLoading]=useState(true);const [q,setQ]=useState("");
   useEffect(()=>{req("/api/admin/payments",{},token).then(setPayments).catch(()=>{}).finally(()=>setLoading(false));},[token]);
@@ -1052,7 +1142,7 @@ export default function AdminApp(){
       {section==="users"&&<Users token={token} notify={notify}/>}
       {section==="listings"&&<Listings token={token} notify={notify}/>}
       {section==="sold"&&<SoldListings token={token}/>}
-      {section==="requests"&&<BuyerRequests token={token}/>}
+      {section==="requests"&&<BuyerRequests token={token} notify={notify}/>}
       {section==="reports"&&<Reports token={token} notify={notify}/>}
       {section==="violations"&&<Violations token={token} notify={notify}/>}
       {section==="escrow"&&<Escrow token={token} notify={notify}/>}
