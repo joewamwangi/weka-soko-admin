@@ -926,7 +926,7 @@ function BuyerRequests({token,notify}){
   };
 
   const fmtDate=ts=>ts?new Date(ts).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"}):"-";
-  const sc=s=>({active:"bg2",closed:"bm",archived:"by2",expired:"br2"}[s]||"bm");
+  const sc=s=>({pending:"by2",active:"bg2",closed:"bm",archived:"by2",expired:"br2"}[s]||"bm");
   const filtered=items.filter(r=>!q||r.title?.toLowerCase().includes(q.toLowerCase())||r.description?.toLowerCase().includes(q.toLowerCase())||r.requester_anon?.toLowerCase().includes(q.toLowerCase()));
 
   return <>
@@ -934,6 +934,7 @@ function BuyerRequests({token,notify}){
       <input className="inp" style={{flex:1,maxWidth:280}} placeholder="Search requests..." value={q} onChange={e=>setQ(e.target.value)}/>
       <select className="inp" style={{width:140}} value={filter} onChange={e=>setFilter(e.target.value)}>
         <option value="all">All Statuses</option>
+        <option value="pending">Pending Approval</option>
         <option value="active">Active</option>
         <option value="closed">Closed</option>
         <option value="archived">Archived</option>
@@ -965,6 +966,8 @@ function BuyerRequests({token,notify}){
           <td style={{fontSize:12,color:"#636363",whiteSpace:"nowrap"}}>{fmtDate(r.created_at)}</td>
           <td><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
             <button className="btn bs sm" onClick={()=>openDetail(r)}>👁 View</button>
+            {r.status==="pending"&&<button className="btn bg2 sm" onClick={()=>changeStatus(r.id,"active")} disabled={statusSaving}>✅ Approve</button>}
+            {r.status==="pending"&&<button className="btn br sm" onClick={()=>changeStatus(r.id,"archived")} disabled={statusSaving}>❌ Reject</button>}
             {r.status==="active"&&<button className="btn bm sm" onClick={()=>changeStatus(r.id,"closed")} disabled={statusSaving}>Close</button>}
             {r.status==="closed"&&<button className="btn bg2 sm" onClick={()=>changeStatus(r.id,"active")} disabled={statusSaving}>Reopen</button>}
             {r.status!=="archived"&&<button className="btn by sm" onClick={()=>changeStatus(r.id,"archived")} disabled={statusSaving}>Archive</button>}
@@ -1005,6 +1008,10 @@ function BuyerRequests({token,notify}){
         </div>}
       </div>
       <div style={{borderTop:"1px solid #E6E6E6",paddingTop:14,display:"flex",gap:8,flexWrap:"wrap"}}>
+        {selected.status==="pending"&&<>
+          <button className="btn bg2" onClick={()=>changeStatus(selected.id,"active")} disabled={statusSaving}>{statusSaving?<Spin/>:"✅ Approve & Go Live"}</button>
+          <button className="btn br" onClick={()=>changeStatus(selected.id,"archived")} disabled={statusSaving}>{statusSaving?<Spin/>:"❌ Reject Request"}</button>
+        </>}
         {selected.status==="active"&&<button className="btn bs" onClick={()=>changeStatus(selected.id,"closed")} disabled={statusSaving}>{statusSaving?<Spin/>:"Close Request"}</button>}
         {selected.status==="closed"&&<button className="btn bg2" onClick={()=>changeStatus(selected.id,"active")} disabled={statusSaving}>{statusSaving?<Spin/>:"Reopen Request"}</button>}
         {selected.status!=="archived"&&<button className="btn by" onClick={()=>changeStatus(selected.id,"archived")} disabled={statusSaving}>{statusSaving?<Spin/>:"Archive"}</button>}
