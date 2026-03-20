@@ -700,7 +700,7 @@ function SoldListings({token}){
 
   useEffect(()=>{
     setLoading(true);
-    req(`/api/admin/sold?page=${pg}&limit=${PER}`,{},token)
+    req(`/api/listings/admin/sold?page=${pg}&limit=${PER}`,{},token)
       .then(d=>{setItems(d.listings||[]);setTotal(d.total||0);})
       .catch(()=>{}).finally(()=>setLoading(false));
   },[pg,token]);
