@@ -144,7 +144,14 @@ function Login({onLogin}){
 
 function Overview({token}){
   const [s,setS]=useState(null);const [loading,setLoading]=useState(true);
-  useEffect(()=>{req("/api/admin/stats",{},token).then(setS).catch(()=>{}).finally(()=>setLoading(false));},[token]);
+  useEffect(()=>{
+    const fetchStats=()=>req("/api/admin/stats",{},token).then(setS).catch(()=>{});
+    fetchStats();
+    setLoading(false);
+    // Refresh stats every 20s
+    const iv=setInterval(fetchStats,20000);
+    return()=>clearInterval(iv);
+  },[token]);
   if(loading)return <div style={{textAlign:"center",padding:60}}><Spin/></div>;
   if(!s)return <div className="empty">Could not load stats.</div>;
   const {listings:L,users:U,payments:P,violations:V,escrows:E,disputes:D,soldChannels:SC,requests:R}=s;
@@ -330,7 +337,12 @@ function ReviewQueue({token,notify}){
       .then(d=>{setListings(d.listings||[]);})
       .catch(()=>{}).finally(()=>setLoading(false));
   };
-  useEffect(()=>{load();},[token]);
+  useEffect(()=>{
+    load();
+    // Refresh review queue every 15s so new submissions appear automatically
+    const iv=setInterval(load,15000);
+    return()=>clearInterval(iv);
+  },[token]);
 
   const approve=async id=>{
     setSubmitting(true);
@@ -481,9 +493,12 @@ function ReviewQueue({token,notify}){
 function Users({token,notify}){
   const [users,setUsers]=useState([]);const [loading,setLoading]=useState(true);const [q,setQ]=useState("");
   useEffect(()=>{
-    req("/api/admin/users",{},token).then(data=>{
+    const fetchUsers=()=>req("/api/admin/users",{},token).then(data=>{
       setUsers(Array.isArray(data)?data:(data.users||[]));
     }).catch(()=>{}).finally(()=>setLoading(false));
+    fetchUsers();
+    const iv=setInterval(fetchUsers,60000);
+    return()=>clearInterval(iv);
   },[token]);
   const suspend=async u=>{try{await req(`/api/admin/users/${u.id}/suspend`,{method:"POST",body:JSON.stringify({suspend:!u.is_suspended})},token);setUsers(p=>p.map(x=>x.id===u.id?{...x,is_suspended:!u.is_suspended}:x));notify(u.is_suspended?"User unsuspended.":"User suspended.",true);}catch(e){notify(e.message,false);}};
   const deleteUser=async(id,name)=>{
@@ -691,21 +706,18 @@ function Escrow({token,notify}){
 }
 
 // ── SOLD LISTINGS ─────────────────────────────────────────────────────────────
-function SoldListings({token,notify}){
+function SoldListings({token}){
   const [items,setItems]=useState([]);
   const [loading,setLoading]=useState(true);
   const [pg,setPg]=useState(1);
   const [total,setTotal]=useState(0);
-  const [selected,setSelected]=useState(null);
-  const [actionInProgress,setActionInProgress]=useState(false);
   const PER=30;
 
   useEffect(()=>{
     setLoading(true);
-    req(`/api/admin/sold?page=${pg}&limit=${PER}`,{},token)
+    req(`/api/listings/admin/sold?page=${pg}&limit=${PER}`,{},token)
       .then(d=>{setItems(d.listings||[]);setTotal(d.total||0);})
-      .catch(()=>notify?.("Failed to load sold listings",false))
-      .finally(()=>setLoading(false));
+      .catch(()=>{}).finally(()=>setLoading(false));
   },[pg,token]);
 
   const fmtDate=ts=>ts?new Date(ts).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"}):"—";
@@ -719,48 +731,18 @@ function SoldListings({token,notify}){
     return`${Math.floor(days/30)}mo`;
   };
 
-  const restore=async id=>{
-    if(!window.confirm("Restore this listing to active status?"))return;
-    try{
-      setActionInProgress(true);
-      await req(`/api/admin/listings/${id}`,{method:"PATCH",body:JSON.stringify({status:"active"})},token);
-      setItems(p=>p.filter(l=>l.id!==id));
-      setTotal(p=>p-1);
-      notify?.("Listing restored to active",true);
-    }catch(e){
-      notify?.(e.message,false);
-    }finally{
-      setActionInProgress(false);
-    }
-  };
-
-  const deleteListing=async id=>{
-    if(!window.confirm("Permanently delete this listing?"))return;
-    try{
-      setActionInProgress(true);
-      await req(`/api/admin/listings/${id}`,{method:"DELETE"},token);
-      setItems(p=>p.filter(l=>l.id!==id));
-      setTotal(p=>p-1);
-      notify?.("Listing deleted",true);
-    }catch(e){
-      notify?.(e.message,false);
-    }finally{
-      setActionInProgress(false);
-    }
-  };
-
   return <>
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
       <div style={{fontSize:13,color:"#636363",fontWeight:600}}>{total} sold listing{total!==1?"s":""}</div>
     </div>
     <div className="tw">
       {loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:
-      items.length===0?<div className="empty">No sold listings found</div>:
+      items.length===0?<div className="empty">No sold listings yet</div>:
       <div className="ts"><table>
         <thead><tr>
           <th>Item</th><th>Price</th><th>Category</th>
           <th>Listed</th><th>Sold</th><th>Time to Sell</th>
-          <th>Channel</th><th>Seller</th><th>Buyer</th><th>Actions</th>
+          <th>Channel</th><th>Seller</th>
         </tr></thead>
         <tbody>{items.map(l=>{
           const photo=Array.isArray(l.photos)?l.photos[0]:null;
@@ -785,15 +767,7 @@ function SoldListings({token,notify}){
               :<span style={{fontSize:11,color:"#AEAEB2"}}>—</span>}
             </td>
             <td style={{fontSize:12,color:"#636363"}}>{l.seller_name||"—"}</td>
-            <td style={{fontSize:12,color:"#636363"}}>{l.buyer_name||"—"}</td>
-            <td>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                <button className="btn bs sm" onClick={()=>setSelected(l)} disabled={actionInProgress}>👁 View</button>
-                <button className="btn bp sm" onClick={()=>restore(l.id)} disabled={actionInProgress}>↩ Restore</button>
-                <button className="btn br sm" onClick={()=>deleteListing(l.id)} disabled={actionInProgress}>🗑 Delete</button>
-              </div>
-            </td>
-          </tr>
+          </tr>;
         })}</tbody>
       </table></div>}
     </div>
@@ -802,70 +776,6 @@ function SoldListings({token,notify}){
       <span style={{padding:"6px 12px",fontSize:12,color:"#636363"}}>Page {pg} of {Math.ceil(total/PER)}</span>
       {pg<Math.ceil(total/PER)&&<button className="btn bs sm" onClick={()=>setPg(p=>p+1)}>Next →</button>}
     </div>}
-
-    {selected&&<Modal title={`Sold Listing: ${selected.title}`} onClose={()=>setSelected(null)} large>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
-        <div>
-          <div style={{marginBottom:20}}>
-            <div style={{fontSize:12,color:"#636363",marginBottom:4}}>Photos</div>
-            {selected.photos&&selected.photos.length>0?
-              <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
-                {selected.photos.slice(0,4).map((p,i)=>
-                  <img key={i} src={typeof p==="string"?p:p?.url||p} alt="" style={{width:"100%",height:120,objectFit:"cover",borderRadius:4}}/>
-                )}
-              </div>
-              :<div style={{padding:16,background:"#F4F4F4",textAlign:"center",color:"#AEAEB2",fontSize:12}}>No photos</div>
-            }
-          </div>
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:12,color:"#636363",marginBottom:4}}>Description</div>
-            <div style={{fontSize:13,lineHeight:1.6,color:"#333"}}>{selected.description||"—"}</div>
-          </div>
-        </div>
-        <div>
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>TITLE</div>
-            <div style={{fontSize:14,fontWeight:700}}>{selected.title}</div>
-          </div>
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>PRICE</div>
-            <div style={{fontSize:16,fontWeight:700,color:"#1428A0"}}>{fmtKES(selected.price)}</div>
-          </div>
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>CATEGORY</div>
-            <div style={{fontSize:13}}>{selected.category}</div>
-          </div>
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>LOCATION</div>
-            <div style={{fontSize:13}}>{selected.location}, {selected.county}</div>
-          </div>
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>SELLER</div>
-            <div style={{fontSize:13}}>{selected.seller_name} ({selected.seller_email})</div>
-          </div>
-          {selected.buyer_name&&<div style={{marginBottom:12}}>
-            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>BUYER</div>
-            <div style={{fontSize:13}}>{selected.buyer_name} ({selected.buyer_email})</div>
-          </div>}
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>SOLD CHANNEL</div>
-            <div style={{fontSize:13}}>{selected.sold_channel==="platform"?"🛒 Via Weka Soko":selected.sold_channel==="outside"?"🤝 Outside Platform":"—"}</div>
-          </div>
-          <div style={{marginBottom:12}}>
-            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>LISTED</div>
-            <div style={{fontSize:13}}>{fmtDate(selected.created_at)}</div>
-          </div>
-          <div style={{marginBottom:16}}>
-            <div style={{fontSize:11,color:"#AEAEB2",marginBottom:4}}>SOLD</div>
-            <div style={{fontSize:13}}>{fmtDate(selected.sold_at)}</div>
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <button className="btn bp" onClick={()=>restore(selected.id)} disabled={actionInProgress} style={{flex:1}}>{actionInProgress?<Spin/>:"↩ Restore to Active"}</button>
-            <button className="btn br" onClick={()=>{deleteListing(selected.id);setSelected(null);}} disabled={actionInProgress} style={{flex:1}}>{actionInProgress?<Spin/>:"🗑 Delete"}</button>
-          </div>
-        </div>
-      </div>
-    </Modal>}
   </>;
 }
 
@@ -926,7 +836,7 @@ function BuyerRequests({token,notify}){
   };
 
   const fmtDate=ts=>ts?new Date(ts).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"}):"-";
-  const sc=s=>({pending:"by2",active:"bg2",closed:"bm",archived:"by2",expired:"br2"}[s]||"bm");
+  const sc=s=>({active:"bg2",closed:"bm",archived:"by2",expired:"br2"}[s]||"bm");
   const filtered=items.filter(r=>!q||r.title?.toLowerCase().includes(q.toLowerCase())||r.description?.toLowerCase().includes(q.toLowerCase())||r.requester_anon?.toLowerCase().includes(q.toLowerCase()));
 
   return <>
@@ -934,7 +844,6 @@ function BuyerRequests({token,notify}){
       <input className="inp" style={{flex:1,maxWidth:280}} placeholder="Search requests..." value={q} onChange={e=>setQ(e.target.value)}/>
       <select className="inp" style={{width:140}} value={filter} onChange={e=>setFilter(e.target.value)}>
         <option value="all">All Statuses</option>
-        <option value="pending">Pending Approval</option>
         <option value="active">Active</option>
         <option value="closed">Closed</option>
         <option value="archived">Archived</option>
@@ -966,8 +875,6 @@ function BuyerRequests({token,notify}){
           <td style={{fontSize:12,color:"#636363",whiteSpace:"nowrap"}}>{fmtDate(r.created_at)}</td>
           <td><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
             <button className="btn bs sm" onClick={()=>openDetail(r)}>👁 View</button>
-            {r.status==="pending"&&<button className="btn bg2 sm" onClick={()=>changeStatus(r.id,"active")} disabled={statusSaving}>✅ Approve</button>}
-            {r.status==="pending"&&<button className="btn br sm" onClick={()=>changeStatus(r.id,"archived")} disabled={statusSaving}>❌ Reject</button>}
             {r.status==="active"&&<button className="btn bm sm" onClick={()=>changeStatus(r.id,"closed")} disabled={statusSaving}>Close</button>}
             {r.status==="closed"&&<button className="btn bg2 sm" onClick={()=>changeStatus(r.id,"active")} disabled={statusSaving}>Reopen</button>}
             {r.status!=="archived"&&<button className="btn by sm" onClick={()=>changeStatus(r.id,"archived")} disabled={statusSaving}>Archive</button>}
@@ -1008,10 +915,6 @@ function BuyerRequests({token,notify}){
         </div>}
       </div>
       <div style={{borderTop:"1px solid #E6E6E6",paddingTop:14,display:"flex",gap:8,flexWrap:"wrap"}}>
-        {selected.status==="pending"&&<>
-          <button className="btn bg2" onClick={()=>changeStatus(selected.id,"active")} disabled={statusSaving}>{statusSaving?<Spin/>:"✅ Approve & Go Live"}</button>
-          <button className="btn br" onClick={()=>changeStatus(selected.id,"archived")} disabled={statusSaving}>{statusSaving?<Spin/>:"❌ Reject Request"}</button>
-        </>}
         {selected.status==="active"&&<button className="btn bs" onClick={()=>changeStatus(selected.id,"closed")} disabled={statusSaving}>{statusSaving?<Spin/>:"Close Request"}</button>}
         {selected.status==="closed"&&<button className="btn bg2" onClick={()=>changeStatus(selected.id,"active")} disabled={statusSaving}>{statusSaving?<Spin/>:"Reopen Request"}</button>}
         {selected.status!=="archived"&&<button className="btn by" onClick={()=>changeStatus(selected.id,"archived")} disabled={statusSaving}>{statusSaving?<Spin/>:"Archive"}</button>}
