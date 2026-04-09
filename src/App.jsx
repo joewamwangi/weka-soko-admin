@@ -1,6 +1,6 @@
 import React,{useState,useEffect,useCallback} from "react";
 
-const API = (process.env.REACT_APP_API_URL || "https://wekasokobackend.up.railway.app").replace(/\/$/, "");
+const API = (process.env.REACT_APP_API_URL || "https://weka-soko-backend-production.up.railway.app").replace(/\/$/, "");
 
 const CSS = `
 @font-face{font-family:'SamsungSharpSans';font-weight:400;font-style:normal;font-display:swap;
@@ -175,21 +175,21 @@ function Overview({token}){
       ))}
     </div>
     {SC&&parseInt(SC.total_sold)>0&&<div style={{background:"#fff",border:"1px solid #E6E6E6",padding:"16px 20px",marginTop:16}}>
-      <div style={{fontWeight:700,fontSize:13,marginBottom:12,letterSpacing:"-.01em"}}>Sale Channel Breakdown</div>
+      <div style={{fontWeight:700,fontSize:13,marginBottom:12,letterSpacing:"-.01em"}}>🏷️ Sale Channel Breakdown</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
         {[
-          {l:"Via Weka Soko",v:SC.sold_on_platform||0,c:"#1428A0"},
-          {l:"Outside Platform",v:SC.sold_outside||0,c:"#8B6400"},
-          {l:"Unknown",v:SC.sold_channel_unknown||0,c:"#636363"},
+          {l:"Via Weka Soko",v:SC.sold_on_platform||0,icon:"🛒",c:"#1428A0"},
+          {l:"Outside Platform",v:SC.sold_outside||0,icon:"🤝",c:"#8B6400"},
+          {l:"Unknown",v:SC.sold_channel_unknown||0,icon:"❓",c:"#636363"},
         ].map(x=><div key={x.l} style={{background:"#F6F6F6",padding:"12px 14px"}}>
-          <div style={{height:4}}></div>
+          <div style={{fontSize:18,marginBottom:4}}>{x.icon}</div>
           <div style={{fontSize:20,fontWeight:700,color:x.c}}>{x.v}</div>
           <div style={{fontSize:10,color:"#636363",marginTop:2,textTransform:"uppercase",letterSpacing:".06em"}}>{x.l}</div>
           <div style={{fontSize:10,color:"#AEAEB2",marginTop:1}}>{parseInt(SC.total_sold)>0?Math.round((x.v/parseInt(SC.total_sold))*100):0}% of sold</div>
         </div>)}
       </div>
     </div>}
-    <div style={{background:"rgba(20,40,160,.04)",border:"1px solid rgba(20,40,160,.2)",padding:"10px 14px",fontSize:12,color:"#1428A0",marginTop:12}}>Live data from Railway database. Refresh to update.</div>
+    <div style={{background:"rgba(20,40,160,.04)",border:"1px solid rgba(20,40,160,.2)",padding:"10px 14px",fontSize:12,color:"#1428A0",marginTop:12}}>✓ Live data from Railway database. Refresh to update.</div>
   </>;
 }
 
@@ -226,7 +226,7 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
       if(f.status!==l.status)body.status=f.status;
       if(!Object.keys(body).length){notify("No changes made.",false);return;}
       const updated=await req(`/api/admin/listings/${l.id}`,{method:"PATCH",body:JSON.stringify(body)},token);
-      notify("Listing updated. Seller has been notified.",true);
+      notify("✅ Listing updated. Seller has been notified.",true);
       onUpdated({...l,...updated,...body});
       setTab("view");
     }catch(e){notify(e.message,false);}
@@ -236,22 +236,22 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
   const freeUnlock=async()=>{
     try{
       await req(`/api/admin/listings/${l.id}/free-unlock`,{method:"POST"},token);
-      notify("Listing unlocked — seller notified.",true);
+      notify("🔓 Listing unlocked — seller notified.",true);
       onUpdated({...l,is_unlocked:true});
     }catch(e){notify(e.message,false);}
   };
 
-  return <Modal title={l.title} onClose={onClose} large footer={
+  return <Modal title={`📦 ${l.title}`} onClose={onClose} large footer={
     <div style={{display:"flex",gap:8,width:"100%",alignItems:"center"}}>
-      {!l.is_unlocked&&<button className="btn bb sm" onClick={freeUnlock}>Free Unlock</button>}
+      {!l.is_unlocked&&<button className="btn bb sm" onClick={freeUnlock}>🔓 Free Unlock</button>}
       <div style={{flex:1}}/>
-      {tab==="edit"&&<><button className="btn bs sm" onClick={()=>setTab("view")}>Cancel</button><button className="btn bp sm" onClick={save} disabled={saving}>{saving?<Spin/>:"Save Changes"}</button></>}
-      {tab==="view"&&<button className="btn by sm" onClick={()=>setTab("edit")}>Edit Listing</button>}
+      {tab==="edit"&&<><button className="btn bs sm" onClick={()=>setTab("view")}>Cancel</button><button className="btn bp sm" onClick={save} disabled={saving}>{saving?<Spin/>:"Save Changes →"}</button></>}
+      {tab==="view"&&<button className="btn by sm" onClick={()=>setTab("edit")}>✏️ Edit Listing</button>}
     </div>
   }>
     <div className="tab-row" style={{marginBottom:16}}>
-      <div className={`tab${tab==="view"?" on":""}`} onClick={()=>setTab("view")}>View</div>
-      <div className={`tab${tab==="edit"?" on":""}`} onClick={()=>setTab("edit")}>Edit</div>
+      <div className={`tab${tab==="view"?" on":""}`} onClick={()=>setTab("view")}>👁 View</div>
+      <div className={`tab${tab==="edit"?" on":""}`} onClick={()=>setTab("edit")}>✏️ Edit</div>
     </div>
 
     {tab==="view"&&<>
@@ -286,20 +286,20 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
       </div>}
 
       {l.is_unlocked&&<div style={{background:"rgba(20,40,160,.06)",border:"1px solid rgba(20,40,160,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--accent)"}}>
-        Unlocked — Seller can see buyer contact
+        🔓 Unlocked · Seller can see buyer contact
       </div>}
       {!l.is_unlocked&&l.locked_buyer_id&&<div style={{background:"rgba(139,100,0,.06)",border:"1px solid rgba(139,100,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)"}}>
-        Buyer has locked in — seller has not paid to unlock yet
+        🔥 Buyer has locked in — seller hasn't paid to unlock yet
       </div>}
 
       {l.pending_reports>0&&<div style={{background:"rgba(224,80,80,.08)",border:"1px solid rgba(224,80,80,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--red)",marginTop:8}}>
-        {l.pending_reports} pending report{l.pending_reports>1?"s":""}
+        🚩 {l.pending_reports} pending report{l.pending_reports>1?"s":""}
       </div>}
     </>}
 
     {tab==="edit"&&<>
       <div style={{background:"rgba(139,100,0,.06)",border:"1px solid rgba(139,100,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>
-        Note: Any changes you save will be sent as a notification to the seller.
+        ⚠️ Any changes you save will be sent as a notification to the seller.
       </div>
       <FF label="Title"><input className="inp" value={f.title} onChange={e=>sf("title",e.target.value)}/></FF>
       <FF label="Description"><textarea className="inp" rows={5} value={f.description} onChange={e=>sf("description",e.target.value)}/></FF>
@@ -314,7 +314,7 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
       </div>
       <FF label="Status">
         <select className="inp" value={f.status} onChange={e=>sf("status",e.target.value)}>
-          {["pending_review","active","rejected","sold","archived","flagged","deleted"].map(s=><option key={s} value={s}>{s}</option>)}
+          {["active","sold","archived","flagged","deleted"].map(s=><option key={s} value={s}>{s}</option>)}
         </select>
       </FF>
     </>}
@@ -350,7 +350,7 @@ function ReviewQueue({token,notify}){
       await req(`/api/admin/moderation/${id}/approve`,{method:"POST"},token);
       setListings(p=>p.filter(l=>l.id!==id));
       setSelected(null);
-      notify("Listing approved and is now live.",true);
+      notify("✅ Listing approved and live!",true);
     }catch(e){notify(e.message,false);}
     finally{setSubmitting(false);}
   };
@@ -362,7 +362,7 @@ function ReviewQueue({token,notify}){
       await req(`/api/admin/moderation/${id}/reject`,{method:"POST",body:JSON.stringify({reason:rejectReason.trim()})},token);
       setListings(p=>p.filter(l=>l.id!==id));
       setSelected(null);setAction(null);setRejectReason("");
-      notify("Listing rejected. Seller has been notified.",true);
+      notify("❌ Listing rejected, seller notified.",true);
     }catch(e){notify(e.message,false);}
     finally{setSubmitting(false);}
   };
@@ -374,7 +374,7 @@ function ReviewQueue({token,notify}){
       await req(`/api/admin/moderation/${id}/request-changes`,{method:"POST",body:JSON.stringify({note:changeNote.trim()})},token);
       setListings(p=>p.filter(l=>l.id!==id));
       setSelected(null);setAction(null);setChangeNote("");
-      notify("Change request sent to seller.",true);
+      notify("✏️ Change request sent to seller.",true);
     }catch(e){notify(e.message,false);}
     finally{setSubmitting(false);}
   };
@@ -386,6 +386,7 @@ function ReviewQueue({token,notify}){
   return <>
     {listings.length===0
       ?<div className="empty">
+          <div style={{fontSize:48,marginBottom:12,opacity:.2}}>✅</div>
           <div style={{fontWeight:700,fontSize:16,marginBottom:6}}>All caught up!</div>
           <div style={{fontSize:13,color:"#636363"}}>No listings pending review</div>
         </div>
@@ -399,7 +400,7 @@ function ReviewQueue({token,notify}){
               onClick={()=>{setSelected(l);setAction(null);setRejectReason("");setChangeNote("");}}>
               <div style={{height:160,background:"#F4F4F4",position:"relative",overflow:"hidden"}}>
                 {cover?<img src={cover} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                  :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",opacity:.1}}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>}
+                  :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:40,opacity:.15}}>📦</div>}
                 <span className="badge bm" style={{position:"absolute",top:8,right:8,fontSize:10}}>{l.category}</span>
               </div>
               <div style={{padding:"12px 14px"}}>
@@ -421,7 +422,7 @@ function ReviewQueue({token,notify}){
           <div style={{aspectRatio:"4/3",background:"#F4F4F4",overflow:"hidden",marginBottom:8}}>
             {(selected.photos||[])[0]
               ?<img src={(selected.photos||[])[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-              :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",opacity:.1}}><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>}
+              :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:48,opacity:.1}}>📦</div>}
           </div>
           {(selected.photos||[]).length>1&&<div style={{display:"flex",gap:4,overflowX:"auto"}}>
             {(selected.photos||[]).slice(1).map((p,i)=><img key={i} src={p} alt="" style={{width:56,height:44,objectFit:"cover",flexShrink:0,borderRadius:0}}/>)}
@@ -438,7 +439,7 @@ function ReviewQueue({token,notify}){
           </div>
           <div style={{marginBottom:12}}>
             <div className="lbl">Location</div>
-            <div style={{fontSize:13}}>{selected.location||"—"}{selected.county?", "+selected.county:""}</div>
+            <div style={{fontSize:13}}>📍 {selected.location||"—"}{selected.county?", "+selected.county:""}</div>
           </div>
           <div style={{marginBottom:12}}>
             <div className="lbl">Seller</div>
@@ -463,9 +464,9 @@ function ReviewQueue({token,notify}){
 
       {/* Action buttons */}
       {!action&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        <button className="btn bp" onClick={()=>approve(selected.id)} disabled={submitting}>{submitting?<Spin/>:"Approve — Go Live"}</button>
-        <button className="btn by sm" onClick={()=>setAction("changes")}>Request Changes</button>
-        <button className="btn br sm" onClick={()=>setAction("reject")}>Reject</button>
+        <button className="btn bp" onClick={()=>approve(selected.id)} disabled={submitting}>{submitting?<Spin/>:"✅ Approve — Go Live"}</button>
+        <button className="btn by sm" onClick={()=>setAction("changes")}>✏️ Request Changes</button>
+        <button className="btn br sm" onClick={()=>setAction("reject")}>❌ Reject</button>
       </div>}
 
       {action==="reject"&&<div>
@@ -551,7 +552,7 @@ function Listings({token,notify}){
     try{
       await req(`/api/admin/listings/${markSoldListing.id}/mark-sold`,{method:"POST",body:JSON.stringify({sold_channel:soldChannel})},token);
       setListings(p=>p.map(l=>l.id===markSoldListing.id?{...l,status:"sold"}:l));
-      notify(`"${markSoldListing.title}" marked as sold (${soldChannel}).`,true);
+      notify(`✅ "${markSoldListing.title}" marked as sold (${soldChannel}).`,true);
       setMarkSoldListing(null);
     }catch(e){notify(e.message,false);}
     finally{setMarkingSold(false);}
@@ -576,13 +577,13 @@ function Listings({token,notify}){
           <td style={{color:"#1428A0",fontWeight:700}}>{fmtKES(l.price)}</td>
           <td style={{fontSize:12,color:"#636363"}}>{l.category}</td>
           <td><span className={`badge ${sc(l.status)}`}>{l.status}</span></td>
-          <td>{parseInt(l.pending_reports||0)>0&&<span className="badge br2">{l.pending_reports} flag{l.pending_reports>1?"s":""}</span>}</td>
+          <td>{parseInt(l.pending_reports||0)>0&&<span className="badge br2">🚩 {l.pending_reports}</span>}</td>
           <td style={{fontSize:11,color:"#636363"}}>{ago(l.created_at)}</td>
           <td><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-            <button className="btn bs sm" onClick={()=>setViewListing(l)}>View</button>
+            <button className="btn bs sm" onClick={()=>setViewListing(l)}>👁 View</button>
             {l.status!=="active"&&<button className="btn bp sm" onClick={()=>updStatus(l.id,"active")}>Activate</button>}
-            {(l.status==="archived"||l.status==="flagged")&&<button className="btn bp sm" onClick={()=>restoreListing(l.id)}>Restore</button>}
-            {(l.status==="active"||l.status==="locked")&&<button className="btn by sm" onClick={()=>{setSoldChannel("platform");setMarkSoldListing(l);}}>Mark Sold</button>}
+            {(l.status==="archived"||l.status==="flagged")&&<button className="btn bp sm" onClick={()=>restoreListing(l.id)}>↩ Restore</button>}
+            {(l.status==="active"||l.status==="locked")&&<button className="btn by sm" onClick={()=>{setSoldChannel("platform");setMarkSoldListing(l);}}>✅ Mark Sold</button>}
             <button className="btn br sm" onClick={()=>del(l.id)}>Delete</button>
           </div></td>
         </tr>)}</tbody>
@@ -599,11 +600,12 @@ function Listings({token,notify}){
         <div className="lbl" style={{marginBottom:8}}>Where was this item sold? <span style={{color:"#C03030"}}>*</span></div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {[
-            {val:"platform",label:"Sold via Weka Soko",desc:"The buyer and seller connected and transacted through the platform"},
-            {val:"outside",label:"Sold outside the platform",desc:"The seller sold the item independently, not through Weka Soko"},
+            {val:"platform",icon:"🛒",label:"Sold via Weka Soko",desc:"The buyer and seller connected and transacted through the platform"},
+            {val:"outside",icon:"🤝",label:"Sold outside the platform",desc:"The seller sold the item independently, not through Weka Soko"},
           ].map(opt=>(
             <div key={opt.val} onClick={()=>setSoldChannel(opt.val)}
               style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 14px",border:`2px solid ${soldChannel===opt.val?"#1428A0":"#E6E6E6"}`,cursor:"pointer",background:soldChannel===opt.val?"rgba(20,40,160,.04)":"#fff",transition:"all .15s"}}>
+              <div style={{fontSize:24,marginTop:2}}>{opt.icon}</div>
               <div style={{flex:1}}>
                 <div style={{fontWeight:700,fontSize:13,color:soldChannel===opt.val?"#1428A0":"#1D1D1D"}}>{opt.label}</div>
                 <div style={{fontSize:12,color:"#636363",marginTop:3}}>{opt.desc}</div>
@@ -616,12 +618,12 @@ function Listings({token,notify}){
         </div>
       </div>
       <div style={{background:"rgba(192,48,48,.04)",border:"1px solid rgba(192,48,48,.15)",padding:"10px 13px",fontSize:12,color:"#7f1d1d",marginBottom:16}}>
-        This action cannot be undone. The listing status will be permanently changed to <strong>Sold</strong> and the seller will be notified.
+        ⚠️ This action cannot be undone. The listing status will be permanently changed to <strong>Sold</strong> and the seller will be notified.
       </div>
       <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
         <button className="btn bs" onClick={()=>setMarkSoldListing(null)}>Cancel</button>
         <button className="btn bp" onClick={confirmMarkSold} disabled={markingSold}>
-          {markingSold?<Spin/>:"Confirm — Mark as Sold"}
+          {markingSold?<Spin/>:"✅ Confirm — Mark as Sold"}
         </button>
       </div>
     </Modal>}
@@ -641,8 +643,8 @@ function Violations({token,notify}){
   useEffect(()=>{req("/api/admin/violations?reviewed=false",{},token).then(setViolations).catch(()=>{}).finally(()=>setLoading(false));},[token]);
   const review=async(id,action)=>{try{await req(`/api/admin/violations/${id}/review`,{method:"POST",body:JSON.stringify({action})},token);setViolations(p=>p.filter(v=>v.id!==id));notify(`Action: ${action}.`,true);}catch(e){notify(e.message,false);}};
   return <>
-    <div style={{background:"rgba(139,100,0,.06)",border:"1px solid rgba(139,100,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>{violations.length} unreviewed violation{violations.length!==1?"s":""}</div>
-    <div className="tw">{loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:violations.length===0?<div className="empty">No unreviewed violations</div>:
+    <div style={{background:"rgba(139,100,0,.06)",border:"1px solid rgba(139,100,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>⚠️ {violations.length} unreviewed violation{violations.length!==1?"s":""}</div>
+    <div className="tw">{loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:violations.length===0?<div className="empty">✅ No unreviewed violations</div>:
       <div className="ts"><table>
         <thead><tr><th>User</th><th>Severity</th><th>Listing</th><th>Reason</th><th>Time</th><th>Actions</th></tr></thead>
         <tbody>{violations.map(v=><tr key={v.id}>
@@ -666,8 +668,8 @@ function Escrow({token,notify}){
   const sc=s=>({holding:"by2",released:"bg",refunded:"bb2",disputed:"br2"}[s]||"bm");
   return <>
     <div className="tab-row">
-      <div className={`tab${tab==="escrows"?" on":""}`} onClick={()=>setTab("escrows")}>Escrows ({escrows.filter(e=>e.status==="holding").length} holding)</div>
-      <div className={`tab${tab==="disputes"?" on":""}`} onClick={()=>setTab("disputes")}>Disputes ({disputes.filter(d=>d.status==="open").length} open)</div>
+      <div className={`tab${tab==="escrows"?" on":""}`} onClick={()=>setTab("escrows")}>🔐 Escrows ({escrows.filter(e=>e.status==="holding").length} holding)</div>
+      <div className={`tab${tab==="disputes"?" on":""}`} onClick={()=>setTab("disputes")}>⚖️ Disputes ({disputes.filter(d=>d.status==="open").length} open)</div>
     </div>
     {loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:tab==="escrows"?(
       <div className="tw">{escrows.length===0?<div className="empty">No escrows</div>:
@@ -688,7 +690,7 @@ function Escrow({token,notify}){
         </table></div>}
       </div>
     ):(
-      <div className="tw">{disputes.length===0?<div className="empty">No open disputes</div>:
+      <div className="tw">{disputes.length===0?<div className="empty">No open disputes ✅</div>:
         <div className="ts"><table>
           <thead><tr><th>Listing</th><th>Raised By</th><th>Reason</th><th>Amount</th><th>Actions</th></tr></thead>
           <tbody>{disputes.map(d=><tr key={d.id}>
@@ -760,7 +762,7 @@ function SoldListings({token}){
             <td style={{fontSize:12,fontWeight:700}}>{duration(l.created_at,l.sold_at)}</td>
             <td>{l.sold_channel
               ?<span className={`badge ${l.sold_channel==="platform"?"bg":"by2"}`} style={{fontSize:10}}>
-                {l.sold_channel==="platform"?"Via Platform":"Elsewhere"}
+                {l.sold_channel==="platform"?"🛒 WekaSoko":"🤝 Elsewhere"}
               </span>
               :<span style={{fontSize:11,color:"#AEAEB2"}}>—</span>}
             </td>
@@ -872,7 +874,7 @@ function BuyerRequests({token,notify}){
           <td><span className={`badge ${sc(r.status)}`} style={{fontSize:10}}>{r.status}</span></td>
           <td style={{fontSize:12,color:"#636363",whiteSpace:"nowrap"}}>{fmtDate(r.created_at)}</td>
           <td><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-            <button className="btn bs sm" onClick={()=>openDetail(r)}>View</button>
+            <button className="btn bs sm" onClick={()=>openDetail(r)}>👁 View</button>
             {r.status==="active"&&<button className="btn bm sm" onClick={()=>changeStatus(r.id,"closed")} disabled={statusSaving}>Close</button>}
             {r.status==="closed"&&<button className="btn bg2 sm" onClick={()=>changeStatus(r.id,"active")} disabled={statusSaving}>Reopen</button>}
             {r.status!=="archived"&&<button className="btn by sm" onClick={()=>changeStatus(r.id,"archived")} disabled={statusSaving}>Archive</button>}
@@ -886,7 +888,7 @@ function BuyerRequests({token,notify}){
         <div><div className="lbl">Title</div><div style={{fontWeight:700,fontSize:15}}>{selected.title}</div></div>
         <div><div className="lbl">Status</div><span className={`badge ${sc(selected.status)}`}>{selected.status}</span></div>
         <div><div className="lbl">Budget</div><div style={{fontWeight:700,color:"#1428A0",fontSize:18}}>{selected.budget?fmtKES(selected.budget):"Not specified"}</div></div>
-        <div><div className="lbl">Location</div><div style={{fontSize:13}}>{selected.county||"Any county"}</div></div>
+        <div><div className="lbl">Location</div><div style={{fontSize:13}}>📍 {selected.county||"Any county"}</div></div>
         <div><div className="lbl">Posted by</div><div style={{fontSize:13}}>{selected.requester_anon||"Anonymous"}</div></div>
         <div><div className="lbl">Posted on</div><div style={{fontSize:13}}>{fmtDate(selected.created_at)}</div></div>
       </div>
@@ -994,7 +996,7 @@ function Reports({token,notify}){
   useEffect(()=>load(),[load]);
   const resolve=async(id,action)=>{try{await req(`/api/admin/reports/${id}`,{method:"PATCH",body:JSON.stringify({action})},token);setReports(p=>p.filter(r=>r.id!==id));notify(`Report ${action}d.`,true);}catch(e){notify(e.message,false);}};
   const restore=async(listingId)=>{setRestoring(listingId);try{await req(`/api/admin/listings/${listingId}/restore`,{method:"POST"},token);notify("Listing restored to active.",true);load();}catch(e){notify(e.message,false);}finally{setRestoring(null);}};
-  const REASON_LABELS={scam:"Scam",fake_item:"Fake item",wrong_price:"Wrong price",offensive:"Offensive content",spam:"Spam",wrong_category:"Wrong category",already_sold:"Already sold",other:"Other"};
+  const REASON_LABELS={scam:"🚨 Scam",fake_item:"🎭 Fake item",wrong_price:"💰 Wrong price",offensive:"🚫 Offensive",spam:"📧 Spam",wrong_category:"📂 Wrong category",already_sold:"✅ Already sold",other:"❓ Other"};
   return <div>
     <div style={{display:"flex",gap:8,marginBottom:20}}>
       {["pending","resolved","dismissed"].map(s=><button key={s} className={`btn ${status===s?"bp":"bs"} sm`} onClick={()=>setStatus(s)}>{s.charAt(0).toUpperCase()+s.slice(1)}</button>)}
@@ -1007,7 +1009,7 @@ function Reports({token,notify}){
               <span style={{fontWeight:700}}>{REASON_LABELS[r.reason]||r.reason}</span>
               <span className={`badge ${r.listing_status==="active"?"bg":r.listing_status==="flagged"?"by2":"br2"}`}>{r.listing_status}</span>
             </div>
-            <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>{r.listing_title}</div>
+            <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>📦 {r.listing_title}</div>
             {r.details&&<div style={{color:"var(--mut)",fontSize:12,marginBottom:4}}>{r.details}</div>}
             <div style={{fontSize:11,color:"var(--dim)"}}>Reported by {r.reporter_name} ({r.reporter_email}) · {new Date(r.created_at).toLocaleDateString()}</div>
           </div>
@@ -1029,7 +1031,7 @@ function AdminInvites({token,notify}){
   const [form,setForm]=useState({name:"",email:"",admin_level:"viewer"});
   const [sending,setSending]=useState(false);
   const sf=(k,v)=>setForm(p=>({...p,[k]:v}));
-  const LEVELS=[["viewer","Viewer — read-only"],["moderator","Moderator — manage listings & violations"],["manager","Manager — all except invites"],["super","Super Admin — full access"]];
+  const LEVELS=[["viewer","👁 Viewer — read-only"],["moderator","🛡 Moderator — manage listings & violations"],["manager","⚙️ Manager — all except invites"],["super","🔑 Super Admin — full access"]];
 
   useEffect(()=>{
     req("/api/admin/admins",{},token).then(setAdmins).catch(()=>{}).finally(()=>setLoading(false));
@@ -1078,7 +1080,7 @@ function AdminInvites({token,notify}){
           super:"Full access including inviting and revoking other admins.",
         }[form.admin_level]}
       </div>
-      <button className="btn bp" style={{marginTop:12}} onClick={sendInvite} disabled={sending}>{sending?<Spin/>:"Send Invite"}</button>
+      <button className="btn bp" style={{marginTop:12}} onClick={sendInvite} disabled={sending}>{sending?<Spin/>:"📨 Send Invite"}</button>
     </div>
 
     <div className="lbl" style={{marginBottom:12}}>Current Admins ({admins.length})</div>
@@ -1101,162 +1103,19 @@ function AdminInvites({token,notify}){
   </>;
 }
 
-// ── MALLS / STORES MANAGEMENT ────────────────────────────────────────────────
-function Stores({token,notify}){
-  const [stores,setStores]=useState([]);
-  const [total,setTotal]=useState(0);
-  const [loading,setLoading]=useState(true);
-  const [q,setQ]=useState("");
-  const [statusFilter,setStatusFilter]=useState("");
-  const [offset,setOffset]=useState(0);
-  const LIMIT=20;
-
-  const load=useCallback(async(off=0,search=q,sf=statusFilter)=>{
-    setLoading(true);
-    try{
-      const qs=new URLSearchParams({limit:LIMIT,offset:off});
-      if(search) qs.set("q",search);
-      if(sf) qs.set("status",sf);
-      const data=await req(`/api/admin/stores?${qs}`,{},token);
-      setStores(data.stores||[]);
-      setTotal(data.total||0);
-      setOffset(off);
-    }catch(e){notify(e.message,false);}
-    finally{setLoading(false);}
-  },[token,q,statusFilter]);
-
-  useEffect(()=>{load(0);},[statusFilter]);
-
-  const setStatus=async(id,status)=>{
-    try{
-      await req(`/api/admin/stores/${id}/status`,{method:"PATCH",body:JSON.stringify({status})},token);
-      setStores(p=>p.map(s=>s.id===id?{...s,status}:s));
-      notify(`Store ${status}`,true);
-    }catch(e){notify(e.message,false);}
-  };
-
-  const toggleVerified=async(store)=>{
-    try{
-      const data=await req(`/api/admin/stores/${store.id}/verify`,{method:"PATCH",body:JSON.stringify({is_verified:!store.is_verified})},token);
-      setStores(p=>p.map(s=>s.id===store.id?{...s,is_verified:!store.is_verified}:s));
-      notify(data.is_verified?"Store verified":"Verification removed",true);
-    }catch(e){notify(e.message,false);}
-  };
-
-  const deleteStore=async(store)=>{
-    if(!window.confirm(`Delete store "${store.name}"? This cannot be undone.`))return;
-    try{
-      await req(`/api/admin/stores/${store.id}`,{method:"DELETE"},token);
-      setStores(p=>p.filter(s=>s.id!==store.id));
-      setTotal(t=>t-1);
-      notify("Store deleted",true);
-    }catch(e){notify(e.message,false);}
-  };
-
-  const statusBadge=(st)=>{
-    const map={active:"bg2",pending:"by2",suspended:"br2",rejected:"br2"};
-    return <span className={`badge ${map[st]||"bm"}`}>{st||"—"}</span>;
-  };
-
-  return <>
-    <div className="sb">
-      <input className="inp" style={{maxWidth:280}} placeholder="Search stores..." value={q}
-        onChange={e=>setQ(e.target.value)}
-        onKeyDown={e=>e.key==="Enter"&&load(0,q.trim())}/>
-      <button className="btn bp sm" onClick={()=>load(0,q.trim())}>Search</button>
-      <select className="inp" style={{width:"auto"}} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
-        <option value="">All Statuses</option>
-        <option value="pending">Pending</option>
-        <option value="active">Active</option>
-        <option value="suspended">Suspended</option>
-        <option value="rejected">Rejected</option>
-      </select>
-      <span style={{marginLeft:"auto",fontSize:12,color:"var(--mut)"}}>{total} store{total!==1?"s":""}</span>
-    </div>
-
-    {loading?<div style={{textAlign:"center",padding:60}}><Spin/></div>:stores.length===0?<div className="empty">No stores found.</div>:(
-      <>
-        <div className="tw"><div className="ts"><table>
-          <thead><tr>
-            <th>Store</th>
-            <th>Owner</th>
-            <th>Category</th>
-            <th>County</th>
-            <th>Listings</th>
-            <th>Status</th>
-            <th>Verified</th>
-            <th>Created</th>
-            <th>Actions</th>
-          </tr></thead>
-          <tbody>{stores.map(s=>(
-            <tr key={s.id}>
-              <td>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  {s.logo_url
-                    ?<img src={s.logo_url} alt="" style={{width:32,height:32,borderRadius:4,objectFit:"cover",border:"1px solid #E6E6E6",flexShrink:0}}/>
-                    :<div style={{width:32,height:32,borderRadius:4,background:"#F0F0F0",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14,fontWeight:700,color:"#1428A0"}}>{(s.name||"?")[0].toUpperCase()}</div>}
-                  <div>
-                    <div style={{fontWeight:700,fontSize:13}}>{s.name}</div>
-                    <div style={{fontSize:11,color:"var(--mut)"}}>/{s.slug}</div>
-                  </div>
-                </div>
-              </td>
-              <td>
-                <div style={{fontSize:12}}>{s.owner_name||"—"}</div>
-                <div style={{fontSize:11,color:"var(--mut)"}}>{s.owner_email||"—"}</div>
-              </td>
-              <td style={{fontSize:12}}>{s.category||"—"}</td>
-              <td style={{fontSize:12}}>{s.county||"—"}</td>
-              <td style={{fontSize:12,textAlign:"center"}}>{s.active_listing_count||0}</td>
-              <td>{statusBadge(s.status)}</td>
-              <td style={{textAlign:"center"}}>
-                {s.is_verified
-                  ?<span style={{color:"#1428A0",fontSize:12,fontWeight:700}}>Verified</span>
-                  :<span style={{color:"var(--dim)",fontSize:12}}>—</span>}
-              </td>
-              <td style={{fontSize:11,color:"var(--mut)"}}>{ago(s.created_at)}</td>
-              <td>
-                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                  {s.status!=="active"&&<button className="btn bg sm" onClick={()=>setStatus(s.id,"active")}>Approve</button>}
-                  {s.status!=="suspended"&&<button className="btn by sm" onClick={()=>setStatus(s.id,"suspended")}>Suspend</button>}
-                  {s.status!=="rejected"&&<button className="btn br sm" onClick={()=>setStatus(s.id,"rejected")}>Reject</button>}
-                  <button className={`btn sm ${s.is_verified?"bs":"bb"}`} onClick={()=>toggleVerified(s)}>
-                    {s.is_verified?"Unverify":"Verify"}
-                  </button>
-                  <button className="btn br sm" onClick={()=>deleteStore(s)}>Delete</button>
-                </div>
-              </td>
-            </tr>
-          ))}</tbody>
-        </table></div></div>
-
-        {/* Pagination */}
-        {total>LIMIT&&(
-          <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:20,alignItems:"center"}}>
-            {offset>0&&<button className="btn bs sm" onClick={()=>load(Math.max(0,offset-LIMIT))}>Previous</button>}
-            <span style={{fontSize:12,color:"var(--mut)"}}>Showing {offset+1}–{Math.min(offset+LIMIT,total)} of {total}</span>
-            {offset+LIMIT<total&&<button className="btn bs sm" onClick={()=>load(offset+LIMIT)}>Next</button>}
-          </div>
-        )}
-      </>
-    )}
-  </>;
-}
-
 const SECTIONS=[
-  {id:"overview",label:"Overview"},
-  {id:"review",label:"Review Queue"},
-  {id:"users",label:"Users"},
-  {id:"listings",label:"Listings"},
-  {id:"sold",label:"Sold Listings"},
-  {id:"malls",label:"Malls"},
-  {id:"requests",label:"Buyer Requests"},
-  {id:"reports",label:"Reports"},
-  {id:"violations",label:"Violations"},
-  {id:"escrow",label:"Escrow & Disputes"},
-  {id:"payments",label:"Payments"},
-  {id:"vouchers",label:"Vouchers"},
-  {id:"admins",label:"Admin Team"},
+  {id:"overview",icon:"📊",label:"Overview"},
+  {id:"review",icon:"🔍",label:"Review Queue"},
+  {id:"users",icon:"👥",label:"Users"},
+  {id:"listings",icon:"📦",label:"Listings"},
+  {id:"sold",icon:"✅",label:"Sold Listings"},
+  {id:"requests",icon:"🛒",label:"Buyer Requests"},
+  {id:"reports",icon:"🚩",label:"Reports"},
+  {id:"violations",icon:"🚨",label:"Violations"},
+  {id:"escrow",icon:"🔐",label:"Escrow & Disputes"},
+  {id:"payments",icon:"💳",label:"Payments"},
+  {id:"vouchers",icon:"🎟️",label:"Vouchers"},
+  {id:"admins",icon:"🔑",label:"Admin Team"},
 ];
 
 export default function AdminApp(){
@@ -1280,7 +1139,7 @@ export default function AdminApp(){
   return <>
     <div className="sidebar">
       <div className="sidebar-logo">Weka<span>Soko</span> <span style={{fontSize:10,fontWeight:700,letterSpacing:".08em",color:"#636363",textTransform:"uppercase",verticalAlign:"middle"}}>Admin</span></div>
-      {SECTIONS.map(s=><div key={s.id} className={`nav-item${section===s.id?" on":""}`} onClick={()=>setSection(s.id)}><span>{s.label}</span></div>)}
+      {SECTIONS.map(s=><div key={s.id} className={`nav-item${section===s.id?" on":""}`} onClick={()=>setSection(s.id)}><span>{s.icon}</span><span>{s.label}</span></div>)}
       <div style={{flex:1}}/>
       <div style={{padding:"16px 20px",borderTop:"1px solid #E6E6E6"}}>
         <div style={{fontSize:11,color:"#636363",marginBottom:2,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase"}}>Signed in as</div>
@@ -1290,7 +1149,7 @@ export default function AdminApp(){
     </div>
     <div className="main">
       <div className="page-header">
-        <h1 className="page-title">{cur?.label}</h1>
+        <h1 className="page-title">{cur?.icon} {cur?.label}</h1>
         <div style={{fontSize:12,color:"#636363"}}>Live · {new Date().toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"long"})}</div>
       </div>
       {section==="overview"&&<Overview token={token}/>}
@@ -1298,7 +1157,6 @@ export default function AdminApp(){
       {section==="users"&&<Users token={token} notify={notify}/>}
       {section==="listings"&&<Listings token={token} notify={notify}/>}
       {section==="sold"&&<SoldListings token={token}/>}
-      {section==="malls"&&<Stores token={token} notify={notify}/>}
       {section==="requests"&&<BuyerRequests token={token} notify={notify}/>}
       {section==="reports"&&<Reports token={token} notify={notify}/>}
       {section==="violations"&&<Violations token={token} notify={notify}/>}
