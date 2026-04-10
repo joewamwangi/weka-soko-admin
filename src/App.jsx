@@ -1103,6 +1103,225 @@ function AdminInvites({token,notify}){
   </>;
 }
 
+// ── Audit Log ──────────────────────────────────────────────────────────────
+function AuditLog({token}){
+  const [rows,setRows]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [page,setPage]=useState(1);
+  const [hasMore,setHasMore]=useState(false);
+  const PER=50;
+
+  const load=async(p=1)=>{
+    setLoading(true);
+    try{
+      const d=await req(`/api/admin/audit-log?limit=${PER}&offset=${(p-1)*PER}`,{},token);
+      setRows(d.logs||[]);
+      setHasMore((d.logs||[]).length===PER);
+    }catch(e){console.error(e);}
+    setLoading(false);
+  };
+  useEffect(()=>{load(page);},[page]);
+
+  const ACTION_COLOR={listing_approved:"#15803d",listing_rejected:"#C03030",user_suspended:"#C03030",user_unsuspended:"#15803d",maintenance_on:"#92400E",maintenance_off:"#15803d",payment_confirmed:"#1428A0",broadcast:"#7C3AED"};
+
+  return <>
+    <div className="page-header"><h1 className="page-title">Audit Log</h1><button className="btn bs sm" onClick={()=>load(page)}>Refresh</button></div>
+    {loading?<div className="empty"><span className="spin"/></div>:<>
+      <div className="tw"><div className="ts"><table>
+        <thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Target</th><th>IP</th><th>Details</th></tr></thead>
+        <tbody>{rows.map(r=><tr key={r.id}>
+          <td style={{whiteSpace:"nowrap",color:"var(--mut)",fontSize:11}}>{new Date(r.created_at).toLocaleString("en-KE")}</td>
+          <td style={{fontSize:12}}>{r.admin_email||"—"}</td>
+          <td><span className="badge" style={{background:ACTION_COLOR[r.action]?"rgba(0,0,0,.06)":"#F0F0F0",color:ACTION_COLOR[r.action]||"#636363",textTransform:"uppercase",fontSize:9}}>{r.action}</span></td>
+          <td style={{fontSize:12}}>{r.target_type&&r.target_id?`${r.target_type} #${r.target_id}`:"—"}</td>
+          <td style={{fontSize:11,color:"var(--mut)"}}>{r.ip||"—"}</td>
+          <td style={{fontSize:11,color:"var(--mut)",maxWidth:260,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.details?JSON.stringify(r.details):""}</td>
+        </tr>)}
+        {rows.length===0&&<tr><td colSpan={6} className="empty">No audit entries found.</td></tr>}
+        </tbody>
+      </table></div></div>
+      <div style={{display:"flex",gap:8,marginTop:14,justifyContent:"flex-end"}}>
+        <button className="btn bs sm" disabled={page===1} onClick={()=>setPage(p=>p-1)}>Previous</button>
+        <span style={{alignSelf:"center",fontSize:12,color:"var(--mut)"}}>Page {page}</span>
+        <button className="btn bs sm" disabled={!hasMore} onClick={()=>setPage(p=>p+1)}>Next</button>
+      </div>
+    </>}
+  </>;
+}
+
+// ── Maintenance Control ────────────────────────────────────────────────────
+function MaintenanceControl({token,notify}){
+  const [state,setState]=useState({enabled:false,message:""});
+  const [msg,setMsg]=useState("");
+  const [loading,setLoading]=useState(true);
+  const [saving,setSaving]=useState(false);
+
+  useEffect(()=>{
+    req("/api/admin/maintenance",{},token).then(d=>{setState(d);setMsg(d.message||"");}).catch(()=>{}).finally(()=>setLoading(false));
+  },[]);
+
+  const toggle=async()=>{
+    setSaving(true);
+    try{
+      const d=await req("/api/admin/maintenance",{method:"POST",body:JSON.stringify({enabled:!state.enabled,message:msg})},token);
+      setState(d);setMsg(d.message||"");
+      notify(`Maintenance mode ${d.enabled?"enabled":"disabled"}.`,!d.enabled);
+    }catch(e){notify(e.message,false);}
+    setSaving(false);
+  };
+
+  if(loading)return <div className="empty"><span className="spin"/></div>;
+
+  return <>
+    <div className="page-header"><h1 className="page-title">Maintenance Mode</h1></div>
+    <div className="card" style={{maxWidth:560}}>
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20,padding:"14px 18px",background:state.enabled?"#FEF3C7":"#F0FDF4",border:`1px solid ${state.enabled?"#F59E0B":"#86EFAC"}`,borderRadius:2}}>
+        <span style={{fontWeight:700,fontSize:24}}>{state.enabled?"⚠":"✓"}</span>
+        <div>
+          <div style={{fontWeight:700,fontSize:15,color:state.enabled?"#92400E":"#15803d"}}>{state.enabled?"Platform is in Maintenance Mode":"Platform is Live"}</div>
+          <div style={{fontSize:12,color:"var(--mut)",marginTop:2}}>{state.enabled?"All non-admin API routes are returning 503.":"All routes are serving normally."}</div>
+        </div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <label className="lbl">Maintenance Message (shown to users)</label>
+        <textarea className="inp" rows={3} value={msg} onChange={e=>setMsg(e.target.value)} placeholder="We are performing scheduled maintenance. Back shortly."/>
+      </div>
+      <button className={`btn ${state.enabled?"bs":"bp"} sm`} onClick={toggle} disabled={saving}>
+        {saving?<span className="spin"/>:null}
+        {state.enabled?"Disable Maintenance Mode":"Enable Maintenance Mode"}
+      </button>
+      <div style={{fontSize:11,color:"var(--mut)",marginTop:10}}>Toggling maintenance mode takes effect within 30 seconds (cached on the server).</div>
+    </div>
+  </>;
+}
+
+// ── Pending Payments ───────────────────────────────────────────────────────
+function PendingPayments({token,notify}){
+  const [rows,setRows]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [confirming,setConfirming]=useState(null);
+  const [receipt,setReceipt]=useState("");
+
+  const load=async()=>{
+    setLoading(true);
+    try{const d=await req("/api/admin/payments/pending",{},token);setRows(d.payments||[]);}
+    catch(e){notify(e.message,false);}
+    setLoading(false);
+  };
+  useEffect(()=>{load();},[]);
+
+  const confirm=async(id)=>{
+    if(!receipt.trim()){notify("Enter M-Pesa receipt number",false);return;}
+    try{
+      await req(`/api/admin/payments/${id}/manual-confirm`,{method:"POST",body:JSON.stringify({receipt:receipt.trim()})},token);
+      notify("Payment confirmed.",true);
+      setConfirming(null);setReceipt("");
+      load();
+    }catch(e){notify(e.message,false);}
+  };
+
+  return <>
+    <div className="page-header"><h1 className="page-title">Pending Payments</h1><button className="btn bs sm" onClick={load}>Refresh</button></div>
+    {loading?<div className="empty"><span className="spin"/></div>:<>
+      <div className="tw"><div className="ts"><table>
+        <thead><tr><th>Created</th><th>User</th><th>Type</th><th>Amount</th><th>Phone</th><th>Listing</th><th>Action</th></tr></thead>
+        <tbody>{rows.map(p=><tr key={p.id}>
+          <td style={{fontSize:11,color:"var(--mut)",whiteSpace:"nowrap"}}>{ago(p.created_at)}</td>
+          <td style={{fontSize:12}}>{p.user_name||"?"}<br/><span style={{fontSize:10,color:"var(--mut)"}}>{p.user_email}</span></td>
+          <td><span className="badge bg">{p.type}</span></td>
+          <td style={{fontWeight:700}}>{fmtKES(p.amount)}</td>
+          <td style={{fontSize:12}}>{p.phone||"—"}</td>
+          <td style={{fontSize:12,maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.listing_title||"—"}</td>
+          <td>
+            {confirming===p.id
+              ?<div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <input className="inp" style={{width:130,padding:"5px 8px",fontSize:12}} value={receipt} onChange={e=>setReceipt(e.target.value)} placeholder="Receipt no."/>
+                  <button className="btn bp sm" onClick={()=>confirm(p.id)}>Confirm</button>
+                  <button className="btn bgh sm" onClick={()=>{setConfirming(null);setReceipt("");}}>Cancel</button>
+                </div>
+              :<button className="btn bb sm" onClick={()=>{setConfirming(p.id);setReceipt("");}}>Manual Confirm</button>
+            }
+          </td>
+        </tr>)}
+        {rows.length===0&&<tr><td colSpan={7} className="empty">No pending payments.</td></tr>}
+        </tbody>
+      </table></div></div>
+    </>}
+  </>;
+}
+
+// ── Emergency Broadcast ────────────────────────────────────────────────────
+function Broadcast({token,notify}){
+  const [title,setTitle]=useState("");
+  const [body,setBody]=useState("");
+  const [type,setType]=useState("info");
+  const [sending,setSending]=useState(false);
+  const [history,setHistory]=useState([]);
+
+  const TYPES=["info","warning","success","error"];
+
+  const send=async()=>{
+    if(!title.trim()||!body.trim()){notify("Title and body are required",false);return;}
+    if(!window.confirm(`Send broadcast to ALL users?\n\n"${title}"`))return;
+    setSending(true);
+    try{
+      const d=await req("/api/admin/broadcast",{method:"POST",body:JSON.stringify({title:title.trim(),body:body.trim(),type})},token);
+      notify(`Broadcast sent to ${d.sent||0} users.`,true);
+      setHistory(h=>[{title,body,type,sent:d.sent,at:new Date()},...h.slice(0,9)]);
+      setTitle("");setBody("");setType("info");
+    }catch(e){notify(e.message,false);}
+    setSending(false);
+  };
+
+  const TYPE_COLOR={info:"#1428A0",warning:"#92400E",success:"#15803d",error:"#C03030"};
+
+  return <>
+    <div className="page-header"><h1 className="page-title">Emergency Broadcast</h1></div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24,alignItems:"start"}}>
+      <div className="card">
+        <div style={{marginBottom:12}}>
+          <label className="lbl">Type</label>
+          <select className="inp" value={type} onChange={e=>setType(e.target.value)}>
+            {TYPES.map(t=><option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
+          </select>
+        </div>
+        <div style={{marginBottom:12}}>
+          <label className="lbl">Title</label>
+          <input className="inp" value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Platform Maintenance in 10 minutes"/>
+        </div>
+        <div style={{marginBottom:16}}>
+          <label className="lbl">Message</label>
+          <textarea className="inp" rows={4} value={body} onChange={e=>setBody(e.target.value)} placeholder="Message body shown to all users..."/>
+        </div>
+        <div style={{background:"#F6F6F6",border:"1px solid #E6E6E6",borderRadius:2,padding:"10px 14px",marginBottom:16,fontSize:12}}>
+          <span style={{fontWeight:700,color:TYPE_COLOR[type]||"#1428A0"}}>Preview — </span>
+          <strong>{title||"Title"}</strong><br/>
+          <span style={{color:"var(--mut)"}}>{body||"Message body..."}</span>
+        </div>
+        <button className="btn bp" onClick={send} disabled={sending||!title.trim()||!body.trim()}>
+          {sending?<span className="spin"/>:null} Send to All Users
+        </button>
+        <div style={{fontSize:11,color:"var(--mut)",marginTop:8}}>This creates an in-app notification for every user and emits a real-time socket event.</div>
+      </div>
+      <div>
+        <div style={{fontWeight:700,fontSize:13,marginBottom:10}}>Recent Broadcasts</div>
+        {history.length===0?<div style={{color:"var(--mut)",fontSize:12}}>No broadcasts sent this session.</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {history.map((h,i)=><div key={i} style={{background:"#fff",border:"1px solid #E6E6E6",padding:"10px 14px",borderRadius:2}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <span className="badge" style={{background:TYPE_COLOR[h.type]+"22",color:TYPE_COLOR[h.type],fontSize:9}}>{h.type.toUpperCase()}</span>
+                <span style={{fontSize:10,color:"var(--mut)"}}>{h.sent} users · {h.at.toLocaleTimeString("en-KE")}</span>
+              </div>
+              <div style={{fontWeight:700,fontSize:12}}>{h.title}</div>
+              <div style={{fontSize:11,color:"var(--mut)"}}>{h.body}</div>
+            </div>)}
+          </div>
+        }
+      </div>
+    </div>
+  </>;
+}
+
 const SECTIONS=[
   {id:"overview",icon:"📊",label:"Overview"},
   {id:"review",icon:"🔍",label:"Review Queue"},
@@ -1116,6 +1335,10 @@ const SECTIONS=[
   {id:"payments",icon:"💳",label:"Payments"},
   {id:"vouchers",icon:"🎟️",label:"Vouchers"},
   {id:"admins",icon:"🔑",label:"Admin Team"},
+  {id:"pending-payments",icon:"⏳",label:"Pending Payments"},
+  {id:"broadcast",icon:"📢",label:"Broadcast"},
+  {id:"maintenance",icon:"🔧",label:"Maintenance"},
+  {id:"audit",icon:"📋",label:"Audit Log"},
 ];
 
 export default function AdminApp(){
@@ -1164,6 +1387,10 @@ export default function AdminApp(){
       {section==="payments"&&<Payments token={token}/>}
       {section==="vouchers"&&<Vouchers token={token} notify={notify}/>}
       {section==="admins"&&<AdminInvites token={token} notify={notify}/>}
+      {section==="pending-payments"&&<PendingPayments token={token} notify={notify}/>}
+      {section==="broadcast"&&<Broadcast token={token} notify={notify}/>}
+      {section==="maintenance"&&<MaintenanceControl token={token} notify={notify}/>}
+      {section==="audit"&&<AuditLog token={token}/>}
     </div>
     {toast&&<Toast key={toast.id} msg={toast.msg} ok={toast.ok} onClose={()=>setToast(null)}/>}
   </>;
