@@ -116,15 +116,85 @@ tbody td{padding:12px 14px;font-size:13px;vertical-align:middle;}
 .hamburger span{display:block;width:22px;height:2px;background:var(--txt);border-radius:2px;transition:all .2s;}
 .drawer-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:70;backdrop-filter:blur(4px);}
 .drawer-ov.open{display:block;}
-.drawer{position:fixed;left:0;top:0;bottom:0;width:268px;background:#fff;z-index:71;transform:translateX(-100%);transition:transform .28s cubic-bezier(.23,1,.32,1);display:flex;flex-direction:column;overflow-y:auto;box-shadow:4px 0 32px rgba(0,0,0,.12);}
+.drawer{position:fixed;left:0;top:0;bottom:0;width:min(268px,85vw);background:#fff;z-index:71;transform:translateX(-100%);transition:transform .28s cubic-bezier(.23,1,.32,1);display:flex;flex-direction:column;overflow-y:auto;box-shadow:4px 0 32px rgba(0,0,0,.12);}
 .drawer.open{transform:translateX(0);}
 .alert-badge{position:absolute;top:-4px;right:-4px;background:#C03030;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+/* Mobile modal slide-up animation (outside @media so it's always available) */
+@keyframes mu-mob{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+/* Utility */
+.hide-mobile{display:block;}
 
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
+
+  /* Layout */
   .sidebar{display:none;}
   .topbar{display:flex;}
-  .main{margin-left:0;margin-top:56px;padding:16px 14px;}
+  .main{margin-left:0;margin-top:56px;padding:14px 12px 40px;}
+  .hide-mobile{display:none!important;}
+
+  /* Page header — compact, no date on mobile */
+  .page-header{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:12px;}
+  .page-title{font-size:17px;letter-spacing:-.02em;}
+
+  /* Stat grid — 2 tight columns */
+  .stat-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+  .stat-card{padding:12px 14px;}
+  .stat-val{font-size:20px;}
+  .stat-lbl{font-size:9px;margin-top:4px;}
+
+  /* Tables — horizontal scroll, compact */
+  .tw{border-radius:12px;}
+  .ts{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  thead th{padding:8px 10px;font-size:9.5px;white-space:nowrap;}
+  tbody td{padding:9px 10px;font-size:12px;}
+
+  /* Buttons */
+  .btn{padding:9px 14px;font-size:12px;}
+  .sm{padding:5px 9px;font-size:11px;}
+
+  /* Inputs — 16px prevents iOS auto-zoom on focus */
+  .inp{font-size:16px;padding:11px 13px;}
+
+  /* Search/filter rows */
+  .sb{gap:8px;}
+
+  /* Cards */
+  .card{padding:14px 15px;border-radius:12px;}
+
+  /* Tabs — hide scrollbar, swipeable */
+  .tab-row{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .tab-row::-webkit-scrollbar{display:none;}
+  .tab{padding:9px 14px;font-size:12px;}
+
+  /* Modals — bottom sheet that slides up */
+  .modal-ov{padding:0;align-items:flex-end;}
+  .modal{
+    max-width:100%!important;
+    width:100%;
+    border-radius:20px 20px 0 0;
+    max-height:92dvh;
+    max-height:92vh;
+    border-left:none;border-right:none;border-bottom:none;
+    animation:mu-mob .28s cubic-bezier(.23,1,.32,1);
+  }
+  .mh{padding:16px 18px 12px;}
+  .mb{padding:16px 18px;}
+  .mf{padding:12px 18px 28px;flex-wrap:wrap;}
+  .mf .btn{flex:1;min-width:0;justify-content:center;}
+
+  /* A drag handle pill for bottom sheets */
+  .mh::before{content:'';display:block;width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px;}
+
+  /* Login — full-width card on mobile */
+  .login-wrap{align-items:flex-start;padding:0;}
+  .login-box{border-radius:0;border-left:none;border-right:none;border-top:none;padding:36px 20px 40px;box-shadow:none;max-width:100%;}
+
+  /* Badge */
+  .badge{font-size:10px;padding:2px 8px;}
+
+  /* Empty state */
+  .empty{padding:40px 12px;}
 }
 `;
 
