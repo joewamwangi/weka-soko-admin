@@ -1,89 +1,120 @@
 import React,{useState,useEffect,useCallback} from "react";
 
-const API = (process.env.REACT_APP_API_URL || "https://weka-soko-backend-production.up.railway.app").replace(/\/$/, "");
+const API = (process.env.REACT_APP_API_URL || "https://wekasokobackend.up.railway.app").replace(/\/$/, "");
 
 const CSS = `
-@font-face{font-family:'SamsungSharpSans';font-weight:400;font-style:normal;font-display:swap;
-  src:url('https://db.onlinewebfonts.com/t/339ef4168eec714f8750c1b72eea3528.woff2') format('woff2'),
-      url('https://db.onlinewebfonts.com/t/339ef4168eec714f8750c1b72eea3528.woff') format('woff');}
-@font-face{font-family:'SamsungSharpSans';font-weight:700;font-style:normal;font-display:swap;
-  src:url('https://db.onlinewebfonts.com/t/03fe5644d1605049951f58ca7961c33f.woff2') format('woff2'),
-      url('https://db.onlinewebfonts.com/t/03fe5644d1605049951f58ca7961c33f.woff') format('woff');}
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#FFFFFF;--surf:#FFFFFF;--sh:#F6F6F6;--border:#E6E6E6;
-  --accent:#1428A0;--accent2:#0F1F8A;--gold:#8B6400;--red:#C03030;--blue:#1428A0;
-  --txt:#1D1D1D;--mut:#636363;--dim:#ADADAD;
-  --r:2px;--rs:2px;--fn:'SamsungSharpSans','Helvetica Neue',Helvetica,Arial,sans-serif;
+  --bg:#FFFFFF;--surf:#FFFFFF;--sh:#F7F7FA;--border:#E8E8EC;
+  --a:#1428A0;--a2:#0F1F8A;--gold:#C49A00;--red:#C03030;--blue:#1428A0;
+  --txt:#111111;--mut:#6B6B7B;--dim:#AEAEB2;
+  --r:16px;--rs:10px;--fn:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;
+  --shadow-contact:0 1px 2px rgba(0,0,0,0.08);
+  --shadow-float:0 8px 24px rgba(20,40,160,0.06);
+  --shadow-hover:0 16px 40px rgba(20,40,160,0.12);
 }
-body{background:#F4F4F4;color:var(--txt);font-family:var(--fn);font-size:14px;line-height:1.55;min-height:100vh;-webkit-font-smoothing:antialiased;}
-::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:#CCCCCC;}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 18px;border-radius:0;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .14s;white-space:nowrap;font-family:var(--fn);letter-spacing:.04em;}
-.btn:disabled{opacity:.4;cursor:not-allowed;}
-.bp{background:#1428A0;color:#fff;border:2px solid #1428A0;}.bp:hover:not(:disabled){background:#0F1F8A;border-color:#0F1F8A;}
-.bs{background:transparent;color:var(--txt);border:1.5px solid var(--txt);}.bs:hover:not(:disabled){background:var(--txt);color:#fff;}
-.br{background:transparent;color:var(--red);border:1px solid var(--red);}.br:hover:not(:disabled){background:var(--red);color:#fff;}
+body{background:#F4F6FB;color:var(--txt);font-family:var(--fn);font-size:14px;line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:#CCCCCC;border-radius:4px;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .2s cubic-bezier(.4,0,.2,1);white-space:nowrap;font-family:var(--fn);letter-spacing:-.01em;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+.btn:hover:not(:disabled){transform:translateY(-1px);}
+.btn:active:not(:disabled){transform:scale(.97) translateY(1px);}
+.bp{background:#1428A0;color:#fff;border:2px solid #1428A0;}.bp:hover:not(:disabled){background:#0F1F8A;border-color:#0F1F8A;box-shadow:0 4px 16px rgba(20,40,160,.32);}
+.bs{background:transparent;color:var(--txt);border:1.5px solid var(--txt);}.bs:hover:not(:disabled){background:var(--txt);color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.18);}
+.br{background:transparent;color:var(--red);border:1px solid var(--red);}.br:hover:not(:disabled){background:var(--red);color:#fff;box-shadow:0 4px 12px rgba(192,48,48,.28);}
 .by{background:transparent;color:var(--gold);border:1px solid var(--gold);}.by:hover:not(:disabled){background:var(--gold);color:#fff;}
 .bb{background:rgba(20,40,160,.08);color:#1428A0;border:1px solid rgba(20,40,160,.2);}.bb:hover:not(:disabled){background:rgba(20,40,160,.15);}
-.bgh{background:transparent;border:none;color:var(--mut);}.bgh:hover{color:var(--txt);}
-.sm{padding:6px 12px;font-size:11px;}
-.inp{width:100%;padding:10px 14px;background:#fff;border:1px solid #D9D9D9;border-radius:0;color:var(--txt);font-family:var(--fn);font-size:13px;outline:none;transition:border-color .14s;}
-.inp:focus{border-color:#1428A0;}
+.bgh{background:transparent;border:none;color:var(--mut);padding:8px 12px;font-size:13px;}.bgh:hover{color:var(--txt);background:rgba(0,0,0,.05);}
+.sm{padding:6px 14px;font-size:12px;}
+
+/* ── INPUTS ── */
+.inp{width:100%;padding:11px 14px;background:#fff;border:1.5px solid #D9D9D9;border-radius:8px;color:var(--txt);font-family:var(--fn);font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s;}
+.inp:focus{border-color:#1428A0;box-shadow:0 0 0 4px rgba(20,40,160,.10);}
 .inp::placeholder{color:#AEAEB2;}
 select.inp{appearance:none;cursor:pointer;}
 textarea.inp{resize:vertical;min-height:80px;}
-.lbl{display:block;font-size:10px;font-weight:700;color:#636363;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;}
-.card{background:#fff;border:1px solid var(--border);border-radius:0;padding:18px 20px;}
-.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:2px;font-size:10px;font-weight:700;letter-spacing:.04em;}
+
+/* ── LABELS ── */
+.lbl{display:block;font-size:11px;font-weight:700;color:#6B6B7B;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+
+/* ── CARDS & SURFACES ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;box-shadow:var(--shadow-contact);}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.02em;}
 .bg{background:rgba(20,40,160,.08);color:#1428A0;}
 .bg2{background:rgba(22,163,74,.1);color:#15803d;}
-.by2{background:rgba(139,100,0,.1);color:#8B6400;}
+.by2{background:rgba(196,154,0,.12);color:#8B6400;}
 .br2{background:rgba(192,48,48,.1);color:var(--red);}
 .bb2{background:rgba(91,155,213,.1);color:#1d6fa4;}
 .bm{background:var(--sh);color:var(--mut);}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid #E5E5E5;border-top-color:#1428A0;border-radius:50%;animation:sp .7s linear infinite;}
 @keyframes sp{to{transform:rotate(360deg)}}
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:#fff;border-right:1px solid #E6E6E6;display:flex;flex-direction:column;z-index:50;}
-.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid #E6E6E6;font-family:var(--fn);font-size:18px;font-weight:700;letter-spacing:-.02em;color:#1D1D1D;}
+
+/* ── SIDEBAR ── */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:232px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50;box-shadow:var(--shadow-float);}
+.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);font-family:var(--fn);font-size:19px;font-weight:800;letter-spacing:-.03em;color:#111;}
 .sidebar-logo span{color:#1428A0;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.04em;color:#636363;transition:all .14s;border-left:3px solid transparent;}
-.nav-item:hover{color:#1D1D1D;background:#F6F6F6;}
-.nav-item.on{color:#1428A0;background:rgba(20,40,160,.04);border-left-color:#1428A0;}
-.main{margin-left:220px;padding:32px 40px;min-height:100vh;}
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:16px;border-bottom:2px solid #1428A0;}
-.page-title{font-size:22px;font-weight:700;letter-spacing:-.02em;color:#1D1D1D;}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:28px;}
-.stat-card{background:#fff;border:1px solid #EBEBEB;border-radius:0;padding:18px 20px;}
-.stat-val{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1;}
-.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#636363;margin-top:6px;}
-.tw{background:#fff;border:1px solid #E6E6E6;border-radius:0;overflow:hidden;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;margin:1px 8px;cursor:pointer;font-size:12.5px;font-weight:600;letter-spacing:-.01em;color:var(--mut);transition:all .15s;border-radius:8px;border-left:none;}
+.nav-item:hover{color:#111;background:var(--sh);}
+.nav-item.on{color:#1428A0;background:rgba(20,40,160,.07);font-weight:700;}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7;}
+.nav-item.on .nav-icon{opacity:1;}
+.main{margin-left:232px;padding:32px 40px;min-height:100vh;}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:1px solid var(--border);}
+.page-title{font-size:22px;font-weight:800;letter-spacing:-.03em;color:#111;}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:28px;}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow-contact);transition:box-shadow .2s,transform .2s;}
+.stat-card:hover{box-shadow:var(--shadow-float);transform:translateY(-2px);}
+.stat-val{font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1;}
+.stat-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin-top:6px;font-weight:600;}
+
+/* ── TABLES ── */
+.tw{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-contact);}
 .ts{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;}
-thead th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#636363;border-bottom:1px solid #E6E6E6;background:#F6F6F6;}
-tbody tr{border-bottom:1px solid #F0F0F0;transition:background .1s;}
-tbody tr:hover{background:#F9F9F9;}
-tbody td{padding:11px 14px;font-size:13px;vertical-align:middle;}
+thead th{padding:11px 14px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);border-bottom:1px solid var(--border);background:var(--sh);}
+tbody tr{border-bottom:1px solid #F0F0F4;transition:background .1s;}
+tbody tr:hover{background:#FAFAFE;}
+tbody td{padding:12px 14px;font-size:13px;vertical-align:middle;}
+
+/* ── LAYOUT UTILITIES ── */
 .sb{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
-.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px);}
-.modal{background:#fff;border:1px solid #E0E0E0;border-radius:0;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;animation:mu .18s ease;box-shadow:0 8px 40px rgba(0,0,0,.12);}
-@keyframes mu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.mh{padding:18px 24px 14px;border-bottom:1px solid #E6E6E6;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;}
-.mb{padding:20px 24px;}
-.mf{padding:12px 24px 18px;border-top:1px solid #E6E6E6;display:flex;gap:8px;justify-content:flex-end;}
-.tab-row{display:flex;gap:0;border-bottom:1px solid #E5E5E5;margin-bottom:20px;overflow-x:auto;}
-.tab{padding:10px 18px;border-radius:0;font-size:12px;font-weight:700;letter-spacing:.04em;cursor:pointer;color:#9E9E9E;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;transition:all .13s;}
-.tab.on{color:#1428A0;border-bottom-color:#1428A0;}
-.empty{text-align:center;padding:48px 20px;color:#9E9E9E;}
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F4F4F4;}
-.login-box{background:#fff;border:1px solid #E6E6E6;border-radius:0;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
-.alert-g{background:rgba(20,40,160,.04);border-left:3px solid #1428A0;padding:10px 14px;font-size:12px;color:#1428A0;margin-bottom:14px;}
-.alert-r{background:rgba(192,48,48,.04);border-left:3px solid #C03030;padding:10px 14px;font-size:12px;color:#C03030;margin-bottom:14px;}
+
+/* ── MODALS ── */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(8px);}
+.modal{background:#fff;border:1px solid var(--border);border-radius:var(--r);width:100%;max-width:540px;max-height:90vh;overflow-y:auto;animation:mu .2s cubic-bezier(.23,1,.32,1);box-shadow:0 24px 60px rgba(0,0,0,.14);}
+.modal.lg{max-width:860px;}
+@keyframes mu{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.mh{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2;}
+.mb{padding:22px 24px;}
+.mf{padding:14px 24px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+
+/* ── TABS ── */
+.tab-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto;}
+.tab{padding:10px 18px;border-radius:0;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--mut);white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;transition:all .15s;}
+.tab.on{color:#1428A0;border-bottom-color:#1428A0;font-weight:700;}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:56px 20px;color:var(--mut);}
+
+/* ── AUTH ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F4F6FB;}
+.login-box{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:40px 36px;width:100%;max-width:400px;box-shadow:var(--shadow-float);}
+.alert-g{background:rgba(20,40,160,.04);border-left:3px solid #1428A0;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#1428A0;margin-bottom:14px;}
+.alert-r{background:rgba(192,48,48,.04);border-left:3px solid #C03030;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#C03030;margin-bottom:14px;}
+
+/* ── RESPONSIVE ── */
 @media(max-width:768px){
-  .sidebar{width:100%;height:52px;flex-direction:row;bottom:auto;border-right:none;border-bottom:1px solid #E6E6E6;overflow-x:auto;}
+  .sidebar{width:100%;height:56px;flex-direction:row;bottom:auto;border-right:none;border-bottom:1px solid var(--border);overflow-x:auto;box-shadow:0 2px 8px rgba(0,0,0,.06);}
   .sidebar-logo{display:none;}
-  .main{margin-left:0;margin-top:52px;padding:16px 14px;}
-  .nav-item{padding:8px 12px;border-left:none;border-bottom:3px solid transparent;font-size:11px;}
-  .nav-item.on{border-bottom-color:#1428A0;border-left-color:transparent;}
+  .main{margin-left:0;margin-top:56px;padding:16px 14px;}
+  .nav-item{padding:8px 12px;border-radius:6px;margin:2px 4px;font-size:11px;}
 }
 `;
 
@@ -104,7 +135,7 @@ function FF({label,children}){return <div style={{marginBottom:13}}>{label&&<lab
 
 function Toast({msg,ok,onClose}){
   useEffect(()=>{const t=setTimeout(onClose,4500);return()=>clearTimeout(t);},[]);
-  return <div style={{position:"fixed",bottom:24,right:24,zIndex:300,background:"#fff",border:`1px solid ${ok?"#1428A0":"#C03030"}`,borderLeft:`4px solid ${ok?"#1428A0":"#C03030"}`,borderRadius:0,padding:"13px 18px",fontSize:13,fontFamily:"var(--fn)",display:"flex",gap:10,alignItems:"center",maxWidth:360,boxShadow:"0 4px 20px rgba(0,0,0,.1)"}}><span>{ok?"✅":"❌"}</span><span style={{flex:1}}>{msg}</span><button className="btn bgh sm" style={{padding:"2px 6px"}} onClick={onClose}>✕</button></div>;
+  return <div style={{position:"fixed",bottom:24,right:24,zIndex:300,background:"#fff",border:`1px solid ${ok?"rgba(20,40,160,.2)":"rgba(192,48,48,.2)"}`,borderLeft:`4px solid ${ok?"#1428A0":"#C03030"}`,borderRadius:10,padding:"13px 18px",fontSize:13,fontFamily:"var(--fn)",display:"flex",gap:10,alignItems:"center",maxWidth:360,boxShadow:"0 8px 32px rgba(0,0,0,.12)"}}><div style={{width:8,height:8,borderRadius:"50%",background:ok?"#1428A0":"#C03030",flexShrink:0}}/><span style={{flex:1}}>{msg}</span><button className="btn bgh sm" style={{padding:"4px 8px"}} onClick={onClose}>✕</button></div>;
 }
 
 function Modal({title,onClose,children,footer,large}){
@@ -174,22 +205,21 @@ function Overview({token}){
         <div key={x.l} className="stat-card"><div className="stat-val" style={{color:x.c,fontSize:x.sm?15:26}}>{x.v}</div><div className="stat-lbl">{x.l}</div></div>
       ))}
     </div>
-    {SC&&parseInt(SC.total_sold)>0&&<div style={{background:"#fff",border:"1px solid #E6E6E6",padding:"16px 20px",marginTop:16}}>
-      <div style={{fontWeight:700,fontSize:13,marginBottom:12,letterSpacing:"-.01em"}}>🏷️ Sale Channel Breakdown</div>
+    {SC&&parseInt(SC.total_sold)>0&&<div style={{background:"#fff",border:"1px solid var(--border)",borderRadius:"var(--r)",padding:"18px 20px",marginTop:16,boxShadow:"var(--shadow-contact)"}}>
+      <div style={{fontWeight:700,fontSize:13,marginBottom:14,letterSpacing:"-.01em"}}>Sale Channel Breakdown</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
         {[
-          {l:"Via Weka Soko",v:SC.sold_on_platform||0,icon:"🛒",c:"#1428A0"},
-          {l:"Outside Platform",v:SC.sold_outside||0,icon:"🤝",c:"#8B6400"},
-          {l:"Unknown",v:SC.sold_channel_unknown||0,icon:"❓",c:"#636363"},
-        ].map(x=><div key={x.l} style={{background:"#F6F6F6",padding:"12px 14px"}}>
-          <div style={{fontSize:18,marginBottom:4}}>{x.icon}</div>
-          <div style={{fontSize:20,fontWeight:700,color:x.c}}>{x.v}</div>
-          <div style={{fontSize:10,color:"#636363",marginTop:2,textTransform:"uppercase",letterSpacing:".06em"}}>{x.l}</div>
-          <div style={{fontSize:10,color:"#AEAEB2",marginTop:1}}>{parseInt(SC.total_sold)>0?Math.round((x.v/parseInt(SC.total_sold))*100):0}% of sold</div>
+          {l:"Via Weka Soko",v:SC.sold_on_platform||0,c:"#1428A0"},
+          {l:"Outside Platform",v:SC.sold_outside||0,c:"#8B6400"},
+          {l:"Unknown",v:SC.sold_channel_unknown||0,c:"var(--mut)"},
+        ].map(x=><div key={x.l} style={{background:"var(--sh)",borderRadius:"var(--rs)",padding:"14px 16px"}}>
+          <div style={{fontSize:22,fontWeight:800,color:x.c,letterSpacing:"-.02em"}}>{x.v}</div>
+          <div style={{fontSize:10,color:"var(--mut)",marginTop:4,textTransform:"uppercase",letterSpacing:".06em",fontWeight:600}}>{x.l}</div>
+          <div style={{fontSize:10,color:"var(--dim)",marginTop:2}}>{parseInt(SC.total_sold)>0?Math.round((x.v/parseInt(SC.total_sold))*100):0}% of sold</div>
         </div>)}
       </div>
     </div>}
-    <div style={{background:"rgba(20,40,160,.04)",border:"1px solid rgba(20,40,160,.2)",padding:"10px 14px",fontSize:12,color:"#1428A0",marginTop:12}}>✓ Live data from Railway database. Refresh to update.</div>
+    <div style={{background:"rgba(20,40,160,.04)",border:"1px solid rgba(20,40,160,.15)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"#1428A0",marginTop:12}}>Live data from Railway. Refresh to update.</div>
   </>;
 }
 
@@ -226,7 +256,7 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
       if(f.status!==l.status)body.status=f.status;
       if(!Object.keys(body).length){notify("No changes made.",false);return;}
       const updated=await req(`/api/admin/listings/${l.id}`,{method:"PATCH",body:JSON.stringify(body)},token);
-      notify("✅ Listing updated. Seller has been notified.",true);
+      notify("Listing updated. Seller has been notified.",true);
       onUpdated({...l,...updated,...body});
       setTab("view");
     }catch(e){notify(e.message,false);}
@@ -236,22 +266,22 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
   const freeUnlock=async()=>{
     try{
       await req(`/api/admin/listings/${l.id}/free-unlock`,{method:"POST"},token);
-      notify("🔓 Listing unlocked — seller notified.",true);
+      notify("Listing unlocked — seller notified.",true);
       onUpdated({...l,is_unlocked:true});
     }catch(e){notify(e.message,false);}
   };
 
-  return <Modal title={`📦 ${l.title}`} onClose={onClose} large footer={
+  return <Modal title={l.title} onClose={onClose} large footer={
     <div style={{display:"flex",gap:8,width:"100%",alignItems:"center"}}>
-      {!l.is_unlocked&&<button className="btn bb sm" onClick={freeUnlock}>🔓 Free Unlock</button>}
+      {!l.is_unlocked&&<button className="btn bb sm" onClick={freeUnlock}>Free Unlock</button>}
       <div style={{flex:1}}/>
       {tab==="edit"&&<><button className="btn bs sm" onClick={()=>setTab("view")}>Cancel</button><button className="btn bp sm" onClick={save} disabled={saving}>{saving?<Spin/>:"Save Changes →"}</button></>}
-      {tab==="view"&&<button className="btn by sm" onClick={()=>setTab("edit")}>✏️ Edit Listing</button>}
+      {tab==="view"&&<button className="btn by sm" onClick={()=>setTab("edit")}>Edit Listing</button>}
     </div>
   }>
     <div className="tab-row" style={{marginBottom:16}}>
-      <div className={`tab${tab==="view"?" on":""}`} onClick={()=>setTab("view")}>👁 View</div>
-      <div className={`tab${tab==="edit"?" on":""}`} onClick={()=>setTab("edit")}>✏️ Edit</div>
+      <div className={`tab${tab==="view"?" on":""}`} onClick={()=>setTab("view")}>View</div>
+      <div className={`tab${tab==="edit"?" on":""}`} onClick={()=>setTab("edit")}>Edit</div>
     </div>
 
     {tab==="view"&&<>
@@ -265,7 +295,7 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
             style={{width:64,height:50,objectFit:"cover",borderRadius:"var(--rs)",cursor:"pointer",opacity:mainPhoto===p?1:.45,border:mainPhoto===p?"2px solid var(--accent)":"2px solid transparent",flexShrink:0}}/>)}
         </div>}
       </>}
-      {photos.length===0&&<div style={{background:"var(--sh)",borderRadius:"var(--rs)",height:120,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,opacity:.3,marginBottom:14}}>📦</div>}
+      {photos.length===0&&<div style={{background:"var(--sh)",borderRadius:"var(--rs)",height:120,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:14}}><span style={{fontSize:11,color:"var(--dim)",fontWeight:600,textTransform:"uppercase",letterSpacing:".08em"}}>No Photos</span></div>}
 
       {/* Info grid */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
@@ -285,21 +315,21 @@ function ListingDetailModal({listing:l,token,notify,onClose,onUpdated}){
         <div style={{background:"var(--sh)",borderRadius:"var(--rs)",padding:"10px 12px",fontSize:13,color:"var(--mut)"}}>{l.reason_for_sale}</div>
       </div>}
 
-      {l.is_unlocked&&<div style={{background:"rgba(20,40,160,.06)",border:"1px solid rgba(20,40,160,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--accent)"}}>
-        🔓 Unlocked · Seller can see buyer contact
+      {l.is_unlocked&&<div style={{background:"rgba(20,40,160,.06)",border:"1px solid rgba(20,40,160,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--a)"}}>
+        Unlocked — seller can see buyer contact
       </div>}
-      {!l.is_unlocked&&l.locked_buyer_id&&<div style={{background:"rgba(139,100,0,.06)",border:"1px solid rgba(139,100,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)"}}>
-        🔥 Buyer has locked in — seller hasn't paid to unlock yet
+      {!l.is_unlocked&&l.locked_buyer_id&&<div style={{background:"rgba(196,154,0,.06)",border:"1px solid rgba(196,154,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)"}}>
+        Buyer locked in — seller hasn't paid to unlock yet
       </div>}
 
-      {l.pending_reports>0&&<div style={{background:"rgba(224,80,80,.08)",border:"1px solid rgba(224,80,80,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--red)",marginTop:8}}>
-        🚩 {l.pending_reports} pending report{l.pending_reports>1?"s":""}
+      {l.pending_reports>0&&<div style={{background:"rgba(192,48,48,.08)",border:"1px solid rgba(192,48,48,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--red)",marginTop:8}}>
+        {l.pending_reports} pending report{l.pending_reports>1?"s":""}
       </div>}
     </>}
 
     {tab==="edit"&&<>
-      <div style={{background:"rgba(139,100,0,.06)",border:"1px solid rgba(139,100,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>
-        ⚠️ Any changes you save will be sent as a notification to the seller.
+      <div style={{background:"rgba(196,154,0,.06)",border:"1px solid rgba(196,154,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>
+        Changes you save will be sent as a notification to the seller.
       </div>
       <FF label="Title"><input className="inp" value={f.title} onChange={e=>sf("title",e.target.value)}/></FF>
       <FF label="Description"><textarea className="inp" rows={5} value={f.description} onChange={e=>sf("description",e.target.value)}/></FF>
@@ -350,7 +380,7 @@ function ReviewQueue({token,notify}){
       await req(`/api/admin/moderation/${id}/approve`,{method:"POST"},token);
       setListings(p=>p.filter(l=>l.id!==id));
       setSelected(null);
-      notify("✅ Listing approved and live!",true);
+      notify("Listing approved and live!",true);
     }catch(e){notify(e.message,false);}
     finally{setSubmitting(false);}
   };
@@ -362,7 +392,7 @@ function ReviewQueue({token,notify}){
       await req(`/api/admin/moderation/${id}/reject`,{method:"POST",body:JSON.stringify({reason:rejectReason.trim()})},token);
       setListings(p=>p.filter(l=>l.id!==id));
       setSelected(null);setAction(null);setRejectReason("");
-      notify("❌ Listing rejected, seller notified.",true);
+      notify("Listing rejected. Seller notified.",true);
     }catch(e){notify(e.message,false);}
     finally{setSubmitting(false);}
   };
@@ -374,7 +404,7 @@ function ReviewQueue({token,notify}){
       await req(`/api/admin/moderation/${id}/request-changes`,{method:"POST",body:JSON.stringify({note:changeNote.trim()})},token);
       setListings(p=>p.filter(l=>l.id!==id));
       setSelected(null);setAction(null);setChangeNote("");
-      notify("✏️ Change request sent to seller.",true);
+      notify("Change request sent to seller.",true);
     }catch(e){notify(e.message,false);}
     finally{setSubmitting(false);}
   };
@@ -386,7 +416,7 @@ function ReviewQueue({token,notify}){
   return <>
     {listings.length===0
       ?<div className="empty">
-          <div style={{fontSize:48,marginBottom:12,opacity:.2}}>✅</div>
+          <div style={{width:48,height:48,borderRadius:"50%",background:"rgba(20,40,160,.08)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 12px"}}><svg viewBox="0 0 24 24" fill="none" stroke="#1428A0" strokeWidth="2" strokeLinecap="round" width={24} height={24}><polyline points="20,6 9,17 4,12"/></svg></div>
           <div style={{fontWeight:700,fontSize:16,marginBottom:6}}>All caught up!</div>
           <div style={{fontSize:13,color:"#636363"}}>No listings pending review</div>
         </div>
@@ -400,7 +430,7 @@ function ReviewQueue({token,notify}){
               onClick={()=>{setSelected(l);setAction(null);setRejectReason("");setChangeNote("");}}>
               <div style={{height:160,background:"#F4F4F4",position:"relative",overflow:"hidden"}}>
                 {cover?<img src={cover} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                  :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:40,opacity:.15}}>📦</div>}
+                  :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%"}}><span style={{fontSize:11,color:"#ccc",fontWeight:700,textTransform:"uppercase",letterSpacing:".06em"}}>No Photo</span></div>}
                 <span className="badge bm" style={{position:"absolute",top:8,right:8,fontSize:10}}>{l.category}</span>
               </div>
               <div style={{padding:"12px 14px"}}>
@@ -422,7 +452,7 @@ function ReviewQueue({token,notify}){
           <div style={{aspectRatio:"4/3",background:"#F4F4F4",overflow:"hidden",marginBottom:8}}>
             {(selected.photos||[])[0]
               ?<img src={(selected.photos||[])[0]} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-              :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",fontSize:48,opacity:.1}}>📦</div>}
+              :<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%"}}><span style={{fontSize:11,color:"#ccc",fontWeight:700,textTransform:"uppercase",letterSpacing:".06em"}}>No Photo</span></div>}
           </div>
           {(selected.photos||[]).length>1&&<div style={{display:"flex",gap:4,overflowX:"auto"}}>
             {(selected.photos||[]).slice(1).map((p,i)=><img key={i} src={p} alt="" style={{width:56,height:44,objectFit:"cover",flexShrink:0,borderRadius:0}}/>)}
@@ -439,7 +469,7 @@ function ReviewQueue({token,notify}){
           </div>
           <div style={{marginBottom:12}}>
             <div className="lbl">Location</div>
-            <div style={{fontSize:13}}>📍 {selected.location||"—"}{selected.county?", "+selected.county:""}</div>
+            <div style={{fontSize:13}}>{selected.location||"—"}{selected.county?", "+selected.county:""}</div>
           </div>
           <div style={{marginBottom:12}}>
             <div className="lbl">Seller</div>
@@ -464,9 +494,9 @@ function ReviewQueue({token,notify}){
 
       {/* Action buttons */}
       {!action&&<div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        <button className="btn bp" onClick={()=>approve(selected.id)} disabled={submitting}>{submitting?<Spin/>:"✅ Approve — Go Live"}</button>
-        <button className="btn by sm" onClick={()=>setAction("changes")}>✏️ Request Changes</button>
-        <button className="btn br sm" onClick={()=>setAction("reject")}>❌ Reject</button>
+        <button className="btn bp" onClick={()=>approve(selected.id)} disabled={submitting}>{submitting?<Spin/>:"Approve — Go Live"}</button>
+        <button className="btn by sm" onClick={()=>setAction("changes")}>Request Changes</button>
+        <button className="btn br sm" onClick={()=>setAction("reject")}>Reject</button>
       </div>}
 
       {action==="reject"&&<div>
@@ -764,7 +794,7 @@ function Listings({token,notify}){
     try{
       await req(`/api/admin/listings/${markSoldListing.id}/mark-sold`,{method:"POST",body:JSON.stringify({sold_channel:soldChannel})},token);
       setListings(p=>p.map(l=>l.id===markSoldListing.id?{...l,status:"sold"}:l));
-      notify(`✅ "${markSoldListing.title}" marked as sold (${soldChannel}).`,true);
+      notify(`"${markSoldListing.title}" marked as sold.`,true);
       setMarkSoldListing(null);
     }catch(e){notify(e.message,false);}
     finally{setMarkingSold(false);}
@@ -789,10 +819,10 @@ function Listings({token,notify}){
           <td style={{color:"#1428A0",fontWeight:700}}>{fmtKES(l.price)}</td>
           <td style={{fontSize:12,color:"#636363"}}>{l.category}</td>
           <td><span className={`badge ${sc(l.status)}`}>{l.status}</span></td>
-          <td>{parseInt(l.pending_reports||0)>0&&<span className="badge br2">🚩 {l.pending_reports}</span>}</td>
+          <td>{parseInt(l.pending_reports||0)>0&&<span className="badge br2">{l.pending_reports} report{l.pending_reports>1?"s":""}</span>}</td>
           <td style={{fontSize:11,color:"#636363"}}>{ago(l.created_at)}</td>
           <td><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-            <button className="btn bs sm" onClick={()=>setViewListing(l)}>👁 View</button>
+            <button className="btn bs sm" onClick={()=>setViewListing(l)}>View</button>
             {l.status!=="active"&&<button className="btn bp sm" onClick={()=>updStatus(l.id,"active")}>Activate</button>}
             {(l.status==="archived"||l.status==="flagged")&&<button className="btn bp sm" onClick={()=>restoreListing(l.id)}>↩ Restore</button>}
             {(l.status==="active"||l.status==="locked")&&<button className="btn by sm" onClick={()=>{setSoldChannel("platform");setMarkSoldListing(l);}}>Mark Sold</button>}
@@ -813,15 +843,14 @@ function Listings({token,notify}){
         <div className="lbl" style={{marginBottom:8}}>Where was this item sold? <span style={{color:"#C03030"}}>*</span></div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {[
-            {val:"platform",icon:"🛒",label:"Sold via Weka Soko",desc:"The buyer and seller connected and transacted through the platform"},
-            {val:"outside",icon:"🤝",label:"Sold outside the platform",desc:"The seller sold the item independently, not through Weka Soko"},
+            {val:"platform",label:"Via Weka Soko",desc:"Buyer and seller connected through the platform"},
+            {val:"outside",label:"Outside the platform",desc:"Seller sold independently, not through Weka Soko"},
           ].map(opt=>(
             <div key={opt.val} onClick={()=>setSoldChannel(opt.val)}
-              style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 14px",border:`2px solid ${soldChannel===opt.val?"#1428A0":"#E6E6E6"}`,cursor:"pointer",background:soldChannel===opt.val?"rgba(20,40,160,.04)":"#fff",transition:"all .15s"}}>
-              <div style={{fontSize:24,marginTop:2}}>{opt.icon}</div>
+              style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 14px",border:`2px solid ${soldChannel===opt.val?"#1428A0":"var(--border)"}`,borderRadius:"var(--rs)",cursor:"pointer",background:soldChannel===opt.val?"rgba(20,40,160,.04)":"#fff",transition:"all .15s"}}>
               <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:13,color:soldChannel===opt.val?"#1428A0":"#1D1D1D"}}>{opt.label}</div>
-                <div style={{fontSize:12,color:"#636363",marginTop:3}}>{opt.desc}</div>
+                <div style={{fontWeight:700,fontSize:13,color:soldChannel===opt.val?"#1428A0":"var(--txt)"}}>{opt.label}</div>
+                <div style={{fontSize:12,color:"var(--mut)",marginTop:3}}>{opt.desc}</div>
               </div>
               <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${soldChannel===opt.val?"#1428A0":"#ADADAD"}`,background:soldChannel===opt.val?"#1428A0":"transparent",flexShrink:0,marginTop:3,display:"flex",alignItems:"center",justifyContent:"center"}}>
                 {soldChannel===opt.val&&<div style={{width:8,height:8,borderRadius:"50%",background:"#fff"}}/>}
@@ -830,13 +859,13 @@ function Listings({token,notify}){
           ))}
         </div>
       </div>
-      <div style={{background:"rgba(192,48,48,.04)",border:"1px solid rgba(192,48,48,.15)",padding:"10px 13px",fontSize:12,color:"#7f1d1d",marginBottom:16}}>
-        ⚠️ This action cannot be undone. The listing status will be permanently changed to <strong>Sold</strong> and the seller will be notified.
+      <div style={{background:"rgba(192,48,48,.04)",border:"1px solid rgba(192,48,48,.15)",borderRadius:"var(--rs)",padding:"10px 13px",fontSize:12,color:"#7f1d1d",marginBottom:16}}>
+        This action cannot be undone. The listing will be permanently marked as <strong>Sold</strong> and the seller will be notified.
       </div>
       <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
         <button className="btn bs" onClick={()=>setMarkSoldListing(null)}>Cancel</button>
         <button className="btn bp" onClick={confirmMarkSold} disabled={markingSold}>
-          {markingSold?<Spin/>:"✅ Confirm — Mark as Sold"}
+          {markingSold?<Spin/>:"Confirm — Mark as Sold"}
         </button>
       </div>
     </Modal>}
@@ -888,8 +917,8 @@ function Violations({token,notify}){
   useEffect(()=>{req("/api/admin/violations?reviewed=false",{},token).then(setViolations).catch(()=>{}).finally(()=>setLoading(false));},[token]);
   const review=async(id,action)=>{try{await req(`/api/admin/violations/${id}/review`,{method:"POST",body:JSON.stringify({action})},token);setViolations(p=>p.filter(v=>v.id!==id));notify(`Action: ${action}.`,true);}catch(e){notify(e.message,false);}};
   return <>
-    <div style={{background:"rgba(139,100,0,.06)",border:"1px solid rgba(139,100,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>⚠️ {violations.length} unreviewed violation{violations.length!==1?"s":""}</div>
-    <div className="tw">{loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:violations.length===0?<div className="empty">✅ No unreviewed violations</div>:
+    <div style={{background:"rgba(196,154,0,.06)",border:"1px solid rgba(196,154,0,.2)",borderRadius:"var(--rs)",padding:"10px 14px",fontSize:12,color:"var(--gold)",marginBottom:16}}>{violations.length} unreviewed violation{violations.length!==1?"s":""}</div>
+    <div className="tw">{loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:violations.length===0?<div className="empty">No unreviewed violations</div>:
       <div className="ts"><table>
         <thead><tr><th>User</th><th>Severity</th><th>Listing</th><th>Reason</th><th>Time</th><th>Actions</th></tr></thead>
         <tbody>{violations.map(v=><tr key={v.id}>
@@ -913,8 +942,8 @@ function Escrow({token,notify}){
   const sc=s=>({holding:"by2",released:"bg",refunded:"bb2",disputed:"br2"}[s]||"bm");
   return <>
     <div className="tab-row">
-      <div className={`tab${tab==="escrows"?" on":""}`} onClick={()=>setTab("escrows")}>🔐 Escrows ({escrows.filter(e=>e.status==="holding").length} holding)</div>
-      <div className={`tab${tab==="disputes"?" on":""}`} onClick={()=>setTab("disputes")}>⚖️ Disputes ({disputes.filter(d=>d.status==="open").length} open)</div>
+      <div className={`tab${tab==="escrows"?" on":""}`} onClick={()=>setTab("escrows")}>Escrows ({escrows.filter(e=>e.status==="holding").length} holding)</div>
+      <div className={`tab${tab==="disputes"?" on":""}`} onClick={()=>setTab("disputes")}>Disputes ({disputes.filter(d=>d.status==="open").length} open)</div>
     </div>
     {loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:tab==="escrows"?(
       <div className="tw">{escrows.length===0?<div className="empty">No escrows</div>:
@@ -935,7 +964,7 @@ function Escrow({token,notify}){
         </table></div>}
       </div>
     ):(
-      <div className="tw">{disputes.length===0?<div className="empty">No open disputes ✅</div>:
+      <div className="tw">{disputes.length===0?<div className="empty">No open disputes</div>:
         <div className="ts"><table>
           <thead><tr><th>Listing</th><th>Raised By</th><th>Reason</th><th>Amount</th><th>Actions</th></tr></thead>
           <tbody>{disputes.map(d=><tr key={d.id}>
@@ -1007,7 +1036,7 @@ function SoldListings({token}){
             <td style={{fontSize:12,fontWeight:700}}>{duration(l.created_at,l.sold_at)}</td>
             <td>{l.sold_channel
               ?<span className={`badge ${l.sold_channel==="platform"?"bg":"by2"}`} style={{fontSize:10}}>
-                {l.sold_channel==="platform"?"🛒 WekaSoko":"🤝 Elsewhere"}
+                {l.sold_channel==="platform"?"Via WekaSoko":"Elsewhere"}
               </span>
               :<span style={{fontSize:11,color:"#AEAEB2"}}>—</span>}
             </td>
@@ -1119,7 +1148,7 @@ function BuyerRequests({token,notify}){
           <td><span className={`badge ${sc(r.status)}`} style={{fontSize:10}}>{r.status}</span></td>
           <td style={{fontSize:12,color:"#636363",whiteSpace:"nowrap"}}>{fmtDate(r.created_at)}</td>
           <td><div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-            <button className="btn bs sm" onClick={()=>openDetail(r)}>👁 View</button>
+            <button className="btn bs sm" onClick={()=>openDetail(r)}>View</button>
             {r.status==="active"&&<button className="btn bm sm" onClick={()=>changeStatus(r.id,"closed")} disabled={statusSaving}>Close</button>}
             {r.status==="closed"&&<button className="btn bg2 sm" onClick={()=>changeStatus(r.id,"active")} disabled={statusSaving}>Reopen</button>}
             {r.status!=="archived"&&<button className="btn by sm" onClick={()=>changeStatus(r.id,"archived")} disabled={statusSaving}>Archive</button>}
@@ -1133,7 +1162,7 @@ function BuyerRequests({token,notify}){
         <div><div className="lbl">Title</div><div style={{fontWeight:700,fontSize:15}}>{selected.title}</div></div>
         <div><div className="lbl">Status</div><span className={`badge ${sc(selected.status)}`}>{selected.status}</span></div>
         <div><div className="lbl">Budget</div><div style={{fontWeight:700,color:"#1428A0",fontSize:18}}>{selected.budget?fmtKES(selected.budget):"Not specified"}</div></div>
-        <div><div className="lbl">Location</div><div style={{fontSize:13}}>📍 {selected.county||"Any county"}</div></div>
+        <div><div className="lbl">Location</div><div style={{fontSize:13}}>{selected.county||"Any county"}</div></div>
         <div><div className="lbl">Posted by</div><div style={{fontSize:13}}>{selected.requester_anon||"Anonymous"}</div></div>
         <div><div className="lbl">Posted on</div><div style={{fontSize:13}}>{fmtDate(selected.created_at)}</div></div>
       </div>
@@ -1163,7 +1192,7 @@ function BuyerRequests({token,notify}){
         {selected.status==="active"&&<button className="btn bs" onClick={()=>changeStatus(selected.id,"closed")} disabled={statusSaving}>{statusSaving?<Spin/>:"Close Request"}</button>}
         {selected.status==="closed"&&<button className="btn bg2" onClick={()=>changeStatus(selected.id,"active")} disabled={statusSaving}>{statusSaving?<Spin/>:"Reopen Request"}</button>}
         {selected.status!=="archived"&&<button className="btn by" onClick={()=>changeStatus(selected.id,"archived")} disabled={statusSaving}>{statusSaving?<Spin/>:"Archive"}</button>}
-        <button className="btn br" onClick={()=>deleteRequest(selected.id)} disabled={deleting}>{deleting?<Spin/>:"🗑 Delete Request"}</button>
+        <button className="btn br" onClick={()=>deleteRequest(selected.id)} disabled={deleting}>{deleting?<Spin/>:"Delete Request"}</button>
       </div>
     </Modal>}
   </>;
@@ -1241,7 +1270,7 @@ function Reports({token,notify}){
   useEffect(()=>load(),[load]);
   const resolve=async(id,action)=>{try{await req(`/api/admin/reports/${id}`,{method:"PATCH",body:JSON.stringify({action})},token);setReports(p=>p.filter(r=>r.id!==id));notify(`Report ${action}d.`,true);}catch(e){notify(e.message,false);}};
   const restore=async(listingId)=>{setRestoring(listingId);try{await req(`/api/admin/listings/${listingId}/restore`,{method:"POST"},token);notify("Listing restored to active.",true);load();}catch(e){notify(e.message,false);}finally{setRestoring(null);}};
-  const REASON_LABELS={scam:"🚨 Scam",fake_item:"🎭 Fake item",wrong_price:"💰 Wrong price",offensive:"🚫 Offensive",spam:"📧 Spam",wrong_category:"📂 Wrong category",already_sold:"✅ Already sold",other:"❓ Other"};
+  const REASON_LABELS={scam:"Scam",fake_item:"Fake item",wrong_price:"Wrong price",offensive:"Offensive",spam:"Spam",wrong_category:"Wrong category",already_sold:"Already sold",other:"Other"};
   return <div>
     <div style={{display:"flex",gap:8,marginBottom:20}}>
       {["pending","resolved","dismissed"].map(s=><button key={s} className={`btn ${status===s?"bp":"bs"} sm`} onClick={()=>setStatus(s)}>{s.charAt(0).toUpperCase()+s.slice(1)}</button>)}
@@ -1254,7 +1283,7 @@ function Reports({token,notify}){
               <span style={{fontWeight:700}}>{REASON_LABELS[r.reason]||r.reason}</span>
               <span className={`badge ${r.listing_status==="active"?"bg":r.listing_status==="flagged"?"by2":"br2"}`}>{r.listing_status}</span>
             </div>
-            <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>📦 {r.listing_title}</div>
+            <div style={{fontWeight:600,marginBottom:4,fontSize:13}}>{r.listing_title}</div>
             {r.details&&<div style={{color:"var(--mut)",fontSize:12,marginBottom:4}}>{r.details}</div>}
             <div style={{fontSize:11,color:"var(--dim)"}}>Reported by {r.reporter_name} ({r.reporter_email}) · {new Date(r.created_at).toLocaleDateString()}</div>
           </div>
@@ -1276,7 +1305,7 @@ function AdminInvites({token,notify}){
   const [form,setForm]=useState({name:"",email:"",admin_level:"viewer"});
   const [sending,setSending]=useState(false);
   const sf=(k,v)=>setForm(p=>({...p,[k]:v}));
-  const LEVELS=[["viewer","👁 Viewer — read-only"],["moderator","🛡 Moderator — manage listings & violations"],["manager","⚙️ Manager — all except invites"],["super","🔑 Super Admin — full access"]];
+  const LEVELS=[["viewer","Viewer — read-only"],["moderator","Moderator — manage listings & violations"],["manager","Manager — all except invites"],["super","Super Admin — full access"]];
 
   useEffect(()=>{
     req("/api/admin/admins",{},token).then(setAdmins).catch(()=>{}).finally(()=>setLoading(false));
@@ -1325,7 +1354,7 @@ function AdminInvites({token,notify}){
           super:"Full access including inviting and revoking other admins.",
         }[form.admin_level]}
       </div>
-      <button className="btn bp" style={{marginTop:12}} onClick={sendInvite} disabled={sending}>{sending?<Spin/>:"📨 Send Invite"}</button>
+      <button className="btn bp" style={{marginTop:12}} onClick={sendInvite} disabled={sending}>{sending?<Spin/>:"Send Invite"}</button>
     </div>
 
     <div className="lbl" style={{marginBottom:12}}>Current Admins ({admins.length})</div>
@@ -1420,8 +1449,10 @@ function MaintenanceControl({token,notify}){
   return <>
     <div className="page-header"><h1 className="page-title">Maintenance Mode</h1></div>
     <div className="card" style={{maxWidth:560}}>
-      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20,padding:"14px 18px",background:state.enabled?"#FEF3C7":"#F0FDF4",border:`1px solid ${state.enabled?"#F59E0B":"#86EFAC"}`,borderRadius:2}}>
-        <span style={{fontWeight:700,fontSize:24}}>{state.enabled?"⚠":"✓"}</span>
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20,padding:"14px 18px",background:state.enabled?"#FEF3C7":"#F0FDF4",border:`1px solid ${state.enabled?"#F59E0B":"#86EFAC"}`,borderRadius:"var(--rs)"}}>
+        <div style={{width:36,height:36,borderRadius:"50%",background:state.enabled?"#F59E0B":"#86EFAC",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <svg viewBox="0 0 16 16" fill="none" stroke={state.enabled?"#fff":"#15803d"} strokeWidth="2" strokeLinecap="round" width={16} height={16}>{state.enabled?<><line x1="8" y1="4" x2="8" y2="9"/><circle cx="8" cy="12" r=".5" fill="currentColor" stroke="none"/></>:<polyline points="3,8 6.5,11.5 13,5"/>}</svg>
+        </div>
         <div>
           <div style={{fontWeight:700,fontSize:15,color:state.enabled?"#92400E":"#15803d"}}>{state.enabled?"Platform is in Maintenance Mode":"Platform is Live"}</div>
           <div style={{fontSize:12,color:"var(--mut)",marginTop:2}}>{state.enabled?"All non-admin API routes are returning 503.":"All routes are serving normally."}</div>
@@ -1567,23 +1598,45 @@ function Broadcast({token,notify}){
   </>;
 }
 
+// ── SVG ICON COMPONENT ────────────────────────────────────────────────────────
+function NavIcon({id}){
+  const s={className:"nav-icon",viewBox:"0 0 16 16",fill:"none",stroke:"currentColor",strokeWidth:"1.5",strokeLinecap:"round",strokeLinejoin:"round"};
+  if(id==="overview")return<svg {...s}><rect x="1" y="9" width="3" height="6"/><rect x="6" y="6" width="3" height="9"/><rect x="11" y="2" width="3" height="13"/></svg>;
+  if(id==="review")return<svg {...s}><rect x="2" y="1" width="12" height="14" rx="2"/><polyline points="5,8.5 7,10.5 11,6.5"/><line x1="5" y1="4" x2="11" y2="4"/></svg>;
+  if(id==="users")return<svg {...s}><circle cx="5.5" cy="5" r="2.5"/><path d="M1 14c0-2.5 2-4.5 4.5-4.5S10 11.5 10 14"/><circle cx="12" cy="4.5" r="2"/><path d="M12 9c2 0 3 1.5 3 3"/></svg>;
+  if(id==="listings")return<svg {...s}><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>;
+  if(id==="sold")return<svg {...s}><circle cx="8" cy="8" r="6"/><polyline points="5,8 7,10.5 11,6"/></svg>;
+  if(id==="requests")return<svg {...s}><rect x="2" y="2" width="12" height="9" rx="2"/><path d="M5 15h6M8 11v4"/></svg>;
+  if(id==="reports")return<svg {...s}><path d="M3 2.5l9 3.5-3 1.5-1.5 5L3 2.5z"/></svg>;
+  if(id==="violations")return<svg {...s}><path d="M8 1.5L1.5 13.5h13L8 1.5z"/><line x1="8" y1="6.5" x2="8" y2="9.5"/><circle cx="8" cy="11.5" r=".6" fill="currentColor" stroke="none"/></svg>;
+  if(id==="escrow")return<svg {...s}><path d="M8 1.5l5.5 2.5v3.5c0 3.5-2.5 5.5-5.5 6.5C5.5 13 3 11 3 7.5V4L8 1.5z"/></svg>;
+  if(id==="payments")return<svg {...s}><rect x="1" y="3.5" width="14" height="9" rx="2"/><line x1="1" y1="7" x2="15" y2="7"/><line x1="4" y1="10" x2="7" y2="10"/></svg>;
+  if(id==="vouchers")return<svg {...s}><rect x="1" y="4" width="14" height="8" rx="2"/><line x1="1" y1="8" x2="5" y2="8" strokeDasharray="2 2"/><line x1="11" y1="8" x2="15" y2="8" strokeDasharray="2 2"/><circle cx="8" cy="8" r="2"/></svg>;
+  if(id==="admins")return<svg {...s}><circle cx="6" cy="5" r="3"/><path d="M1 14c0-2.8 2.2-5 5-5"/><path d="M11 10l1.5 1.5L15 8.5"/></svg>;
+  if(id==="pending-payments")return<svg {...s}><circle cx="8" cy="8" r="6"/><polyline points="8,5 8,8 10.5,10"/></svg>;
+  if(id==="broadcast")return<svg {...s}><path d="M12 4a5 5 0 010 8"/><path d="M9.5 6a2 2 0 010 4"/><line x1="7" y1="8" x2="2" y2="8"/><line x1="2" y1="6" x2="4" y2="6"/><line x1="2" y1="10" x2="4" y2="10"/></svg>;
+  if(id==="maintenance")return<svg {...s}><path d="M12 3.5A3.5 3.5 0 018.5 7c-.5 0-1-.1-1.4-.3L3 11.5a1.5 1.5 0 002 2L9.3 9a3.5 3.5 0 003.3-5.8l-1.5 1.5-.7-.7L12 3.5z"/></svg>;
+  if(id==="audit")return<svg {...s}><rect x="2" y="1" width="12" height="14" rx="2"/><line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8.5" y2="11"/></svg>;
+  return<svg {...s}><circle cx="8" cy="8" r="6"/></svg>;
+}
+
 const SECTIONS=[
-  {id:"overview",icon:"📊",label:"Overview"},
-  {id:"review",icon:"🔍",label:"Review Queue"},
-  {id:"users",icon:"👥",label:"Users"},
-  {id:"listings",icon:"📦",label:"Listings"},
-  {id:"sold",icon:"✅",label:"Sold Listings"},
-  {id:"requests",icon:"🛒",label:"Buyer Requests"},
-  {id:"reports",icon:"🚩",label:"Reports"},
-  {id:"violations",icon:"🚨",label:"Violations"},
-  {id:"escrow",icon:"🔐",label:"Escrow & Disputes"},
-  {id:"payments",icon:"💳",label:"Payments"},
-  {id:"vouchers",icon:"🎟️",label:"Vouchers"},
-  {id:"admins",icon:"🔑",label:"Admin Team"},
-  {id:"pending-payments",icon:"⏳",label:"Pending Payments"},
-  {id:"broadcast",icon:"📢",label:"Broadcast"},
-  {id:"maintenance",icon:"🔧",label:"Maintenance"},
-  {id:"audit",icon:"📋",label:"Audit Log"},
+  {id:"overview",label:"Overview"},
+  {id:"review",label:"Review Queue"},
+  {id:"users",label:"Users"},
+  {id:"listings",label:"Listings"},
+  {id:"sold",label:"Sold Listings"},
+  {id:"requests",label:"Buyer Requests"},
+  {id:"reports",label:"Reports"},
+  {id:"violations",label:"Violations"},
+  {id:"escrow",label:"Escrow & Disputes"},
+  {id:"payments",label:"Payments"},
+  {id:"vouchers",label:"Vouchers"},
+  {id:"admins",label:"Admin Team"},
+  {id:"pending-payments",label:"Pending Payments"},
+  {id:"broadcast",label:"Broadcast"},
+  {id:"maintenance",label:"Maintenance"},
+  {id:"audit",label:"Audit Log"},
 ];
 
 export default function AdminApp(){
@@ -1607,7 +1660,7 @@ export default function AdminApp(){
   return <>
     <div className="sidebar">
       <div className="sidebar-logo">Weka<span>Soko</span> <span style={{fontSize:10,fontWeight:700,letterSpacing:".08em",color:"#636363",textTransform:"uppercase",verticalAlign:"middle"}}>Admin</span></div>
-      {SECTIONS.map(s=><div key={s.id} className={`nav-item${section===s.id?" on":""}`} onClick={()=>setSection(s.id)}><span>{s.icon}</span><span>{s.label}</span></div>)}
+      {SECTIONS.map(s=><div key={s.id} className={`nav-item${section===s.id?" on":""}`} onClick={()=>setSection(s.id)}><NavIcon id={s.id}/><span>{s.label}</span></div>)}
       <div style={{flex:1}}/>
       <div style={{padding:"16px 20px",borderTop:"1px solid #E6E6E6"}}>
         <div style={{fontSize:11,color:"#636363",marginBottom:2,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase"}}>Signed in as</div>
@@ -1617,7 +1670,7 @@ export default function AdminApp(){
     </div>
     <div className="main">
       <div className="page-header">
-        <h1 className="page-title">{cur?.icon} {cur?.label}</h1>
+        <h1 className="page-title">{cur?.label}</h1>
         <div style={{fontSize:12,color:"#636363"}}>Live · {new Date().toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"long"})}</div>
       </div>
       {section==="overview"&&<Overview token={token}/>}
