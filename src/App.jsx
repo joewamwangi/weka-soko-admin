@@ -1,4 +1,4 @@
-import React,{useState,useEffect,useCallback} from "react";
+import React,{useState,useEffect,useCallback,useRef} from "react";
 
 const API = (process.env.REACT_APP_API_URL || "https://wekasokobackend.up.railway.app").replace(/\/$/, "");
 
@@ -109,12 +109,22 @@ tbody td{padding:12px 14px;font-size:13px;vertical-align:middle;}
 .alert-g{background:rgba(20,40,160,.04);border-left:3px solid #1428A0;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#1428A0;margin-bottom:14px;}
 .alert-r{background:rgba(192,48,48,.04);border-left:3px solid #C03030;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#C03030;margin-bottom:14px;}
 
+/* ── MOBILE TOPBAR + DRAWER ── */
+.topbar{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:#fff;border-bottom:1px solid var(--border);z-index:60;padding:0 16px;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.hamburger{background:none;border:none;cursor:pointer;padding:8px;display:flex;flex-direction:column;gap:5px;border-radius:8px;transition:background .15s;}
+.hamburger:hover{background:var(--sh);}
+.hamburger span{display:block;width:22px;height:2px;background:var(--txt);border-radius:2px;transition:all .2s;}
+.drawer-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:70;backdrop-filter:blur(4px);}
+.drawer-ov.open{display:block;}
+.drawer{position:fixed;left:0;top:0;bottom:0;width:268px;background:#fff;z-index:71;transform:translateX(-100%);transition:transform .28s cubic-bezier(.23,1,.32,1);display:flex;flex-direction:column;overflow-y:auto;box-shadow:4px 0 32px rgba(0,0,0,.12);}
+.drawer.open{transform:translateX(0);}
+.alert-badge{position:absolute;top:-4px;right:-4px;background:#C03030;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+
 /* ── RESPONSIVE ── */
 @media(max-width:768px){
-  .sidebar{width:100%;height:56px;flex-direction:row;bottom:auto;border-right:none;border-bottom:1px solid var(--border);overflow-x:auto;box-shadow:0 2px 8px rgba(0,0,0,.06);}
-  .sidebar-logo{display:none;}
+  .sidebar{display:none;}
+  .topbar{display:flex;}
   .main{margin-left:0;margin-top:56px;padding:16px 14px;}
-  .nav-item{padding:8px 12px;border-radius:6px;margin:2px 4px;font-size:11px;}
 }
 `;
 
@@ -132,6 +142,75 @@ async function req(path, opts={}, token) {
 
 function Spin(){return <span className="spin"/>;}
 function FF({label,children}){return <div style={{marginBottom:13}}>{label&&<label className="lbl">{label}</label>}{children}</div>;}
+
+// ── WEKA SOKO LOGO ────────────────────────────────────────────────────────────
+function WsLogo({size=32,showText=true,light=false}){
+  const blue=light?"#fff":"#1428A0";
+  const gold="#C49A00";
+  const w=size*1.5,h=size;
+  return <div style={{display:"flex",alignItems:"center",gap:showText?10:0,flexShrink:0}}>
+    <svg width={w} height={h} viewBox="0 0 90 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* W */}
+      <path d="M4 14L16 48L28 20L40 48L52 14" stroke={blue} strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* S */}
+      <path d="M82 18C73 11 57 13 57 26C57 38 76 36 76 49C76 59 60 61 50 55" stroke={blue} strokeWidth="9" strokeLinecap="round"/>
+      {/* Gold bar */}
+      <line x1="64" y1="6" x2="64" y2="55" stroke={gold} strokeWidth="8" strokeLinecap="round"/>
+    </svg>
+    {showText&&<div style={{lineHeight:1.1}}>
+      <div style={{fontSize:size*0.56,fontWeight:800,letterSpacing:"-.03em",color:light?"#fff":"#111",fontFamily:"var(--fn)"}}>
+        Weka<span style={{color:"#1428A0"}}>Soko</span>
+      </div>
+      <div style={{fontSize:size*0.28,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:light?"rgba(255,255,255,.7)":"var(--mut)",fontFamily:"var(--fn)"}}>Admin</div>
+    </div>}
+  </div>;
+}
+
+// ── NOTIFICATION SOUND SYSTEM ────────────────────────────────────────────────
+function useAdminSound(){
+  const ctxRef=useRef(null);
+  useEffect(()=>{
+    const unlock=()=>{
+      if(ctxRef.current)return;
+      try{
+        const AC=window.AudioContext||window.webkitAudioContext;
+        if(!AC)return;
+        const ctx=new AC();
+        ctxRef.current=ctx;
+        const buf=ctx.createBuffer(1,1,22050);
+        const src=ctx.createBufferSource();
+        src.buffer=buf;src.connect(ctx.destination);src.start(0);
+      }catch(e){}
+    };
+    document.addEventListener('click',unlock,{once:true});
+    document.addEventListener('touchstart',unlock,{once:true});
+    return()=>{document.removeEventListener('click',unlock);document.removeEventListener('touchstart',unlock);};
+  },[]);
+  return useCallback((type='alert')=>{
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC)return;
+      const ctx=ctxRef.current||new AC();
+      if(!ctxRef.current)ctxRef.current=ctx;
+      if(ctx.state==='suspended')ctx.resume().catch(()=>{});
+      const now=ctx.currentTime;
+      // urgent: two-tone alert — new: gentle rising two-tone
+      const tones=type==='urgent'?[880,659.25,880]:[659.25,783.99];
+      tones.forEach((freq,i)=>{
+        const osc=ctx.createOscillator();
+        const gain=ctx.createGain();
+        osc.connect(gain);gain.connect(ctx.destination);
+        osc.type='sine';
+        osc.frequency.setValueAtTime(freq,now+i*0.16);
+        gain.gain.setValueAtTime(0,now+i*0.16);
+        gain.gain.linearRampToValueAtTime(0.22,now+i*0.16+0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001,now+i*0.16+0.4);
+        osc.start(now+i*0.16);
+        osc.stop(now+i*0.16+0.45);
+      });
+    }catch(e){}
+  },[]);
+}
 
 function Toast({msg,ok,onClose}){
   useEffect(()=>{const t=setTimeout(onClose,4500);return()=>clearTimeout(t);},[]);
@@ -160,11 +239,11 @@ function Login({onLogin}){
   };
   return <div className="login-wrap">
     <div className="login-box">
-      <div style={{textAlign:"center",marginBottom:28,paddingBottom:20,borderBottom:"1px solid #E6E6E6"}}>
-        <div style={{fontSize:24,fontWeight:700,letterSpacing:"-.02em",marginBottom:4}}>Weka<span style={{color:"#1428A0"}}>Soko</span></div>
-        <div style={{fontSize:11,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:"#636363"}}>Admin Panel</div>
+      <div style={{textAlign:"center",marginBottom:28,paddingBottom:20,borderBottom:"1px solid var(--border)",display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+        <WsLogo size={36}/>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:".1em",textTransform:"uppercase",color:"var(--mut)"}}>Platform Administration</div>
       </div>
-      <p style={{color:"#636363",fontSize:13,marginBottom:20}}>Sign in to manage the platform.</p>
+      <p style={{color:"var(--mut)",fontSize:13,marginBottom:20}}>Sign in to manage the platform.</p>
       {err&&<div className="alert-r">{err}</div>}
       <FF label="Email"><input className="inp" type="email" placeholder="admin@wekasoko.co.ke" value={email} onChange={e=>setEmail(e.target.value)}/></FF>
       <FF label="Password"><input className="inp" type="password" placeholder="••••••••" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()}/></FF>
@@ -1644,34 +1723,130 @@ export default function AdminApp(){
   const [token,setToken]=useState(()=>localStorage.getItem("ws_admin_token"));
   const [section,setSection]=useState("overview");
   const [toast,setToast]=useState(null);
+  const [drawerOpen,setDrawerOpen]=useState(false);
+  const [alertCount,setAlertCount]=useState(0);
+  const prevCounts=useRef({review:0,reports:0,violations:0,disputes:0});
+  const playSound=useAdminSound();
   const notify=useCallback((msg,ok=true)=>setToast({msg,ok,id:Date.now()}),[]);
 
   useEffect(()=>{let el=document.getElementById("admin-css");if(!el){el=document.createElement("style");el.id="admin-css";document.head.appendChild(el);}el.textContent=CSS;},[]);
+
+  // Auth check on mount
   useEffect(()=>{
-    if(token){req("/api/auth/me",{},token).then(u=>{if(u.role!=="admin"){localStorage.removeItem("ws_admin_token");localStorage.removeItem("ws_admin_user");setUser(null);setToken(null);}else{setUser(u);localStorage.setItem("ws_admin_user",JSON.stringify(u));}}).catch(()=>{localStorage.removeItem("ws_admin_token");localStorage.removeItem("ws_admin_user");setUser(null);setToken(null);});}
+    if(token){
+      req("/api/auth/me",{},token).then(u=>{
+        if(u.role!=="admin"){localStorage.removeItem("ws_admin_token");localStorage.removeItem("ws_admin_user");setUser(null);setToken(null);}
+        else{setUser(u);localStorage.setItem("ws_admin_user",JSON.stringify(u));}
+      }).catch(()=>{localStorage.removeItem("ws_admin_token");localStorage.removeItem("ws_admin_user");setUser(null);setToken(null);});
+    }
   },[]);
+
+  // Request browser notification permission
+  useEffect(()=>{
+    if(!token||!user)return;
+    if('Notification' in window&&Notification.permission==='default'){
+      Notification.requestPermission().catch(()=>{});
+    }
+  },[token,user]);
+
+  // Poll for new items every 30s — play sound + browser notification when counts rise
+  useEffect(()=>{
+    if(!token||!user)return;
+    const poll=async()=>{
+      try{
+        const d=await req("/api/admin/stats",{},token);
+        const r=d.listings?.pending_review||0;
+        const rp=d.reports?.pending||0;
+        const v=d.violations?.total||0;
+        const dis=d.disputes?.open||0;
+        const prev=prevCounts.current;
+        // Only alert if we had a previous reading (not first load)
+        if(prev.review>-1){
+          const newReview=r>prev.review;
+          const newReport=rp>prev.reports;
+          const newViolation=v>prev.violations;
+          const newDispute=dis>prev.disputes;
+          const hasNew=newReview||newReport||newViolation||newDispute;
+          const urgent=newReport||newViolation||newDispute;
+          if(hasNew){
+            playSound(urgent?'urgent':'alert');
+            setAlertCount(c=>c+1);
+            const msg=newReport?'New report filed'
+              :newViolation?'New chat violation detected'
+              :newDispute?'New dispute opened'
+              :'New listing awaiting review';
+            if('Notification' in window&&Notification.permission==='granted'){
+              new Notification('Weka Soko Admin',{
+                body:msg,icon:'/icon.svg',badge:'/icon.svg',
+                tag:'ws-admin-alert',requireInteraction:urgent,
+              });
+            }
+          }
+        }
+        prevCounts.current={review:r,reports:rp,violations:v,disputes:dis};
+      }catch(e){}
+    };
+    // Delay first poll so we don't alert on initial load
+    const t1=setTimeout(()=>{prevCounts.current={review:-1,reports:-1,violations:-1,disputes:-1};poll();},3000);
+    const iv=setInterval(poll,30000);
+    return()=>{clearTimeout(t1);clearInterval(iv);};
+  },[token,user]);
 
   const handleLogin=(u,t)=>{setUser(u);setToken(t);localStorage.setItem("ws_admin_token",t);localStorage.setItem("ws_admin_user",JSON.stringify(u));};
   const logout=()=>{setUser(null);setToken(null);localStorage.removeItem("ws_admin_token");localStorage.removeItem("ws_admin_user");};
 
+  const navigate=(id)=>{setSection(id);setDrawerOpen(false);};
+
   if(!user||!token)return <Login onLogin={handleLogin}/>;
   const cur=SECTIONS.find(s=>s.id===section);
 
+  const SidebarContent=()=><>
+    <div style={{padding:"20px 20px 16px",borderBottom:"1px solid var(--border)"}}>
+      <WsLogo size={28}/>
+    </div>
+    <div style={{flex:1,overflowY:"auto",padding:"8px 0"}}>
+      {SECTIONS.map(s=><div key={s.id} className={`nav-item${section===s.id?" on":""}`} onClick={()=>navigate(s.id)}>
+        <NavIcon id={s.id}/><span>{s.label}</span>
+      </div>)}
+    </div>
+    <div style={{padding:"16px 20px",borderTop:"1px solid var(--border)"}}>
+      <div style={{fontSize:11,color:"var(--mut)",marginBottom:2,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase"}}>Signed in as</div>
+      <div style={{fontWeight:700,fontSize:13,marginBottom:10,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.name}</div>
+      <button className="btn bs sm" style={{width:"100%"}} onClick={logout}>Sign Out</button>
+    </div>
+  </>;
+
   return <>
-    <div className="sidebar">
-      <div className="sidebar-logo">Weka<span>Soko</span> <span style={{fontSize:10,fontWeight:700,letterSpacing:".08em",color:"#636363",textTransform:"uppercase",verticalAlign:"middle"}}>Admin</span></div>
-      {SECTIONS.map(s=><div key={s.id} className={`nav-item${section===s.id?" on":""}`} onClick={()=>setSection(s.id)}><NavIcon id={s.id}/><span>{s.label}</span></div>)}
-      <div style={{flex:1}}/>
-      <div style={{padding:"16px 20px",borderTop:"1px solid #E6E6E6"}}>
-        <div style={{fontSize:11,color:"#636363",marginBottom:2,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase"}}>Signed in as</div>
-        <div style={{fontWeight:700,fontSize:13,marginBottom:10,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.name}</div>
-        <button className="btn bs sm" style={{width:"100%"}} onClick={logout}>Sign Out</button>
+    {/* Desktop sidebar */}
+    <div className="sidebar"><SidebarContent/></div>
+
+    {/* Mobile top bar */}
+    <div className="topbar">
+      <button className="hamburger" onClick={()=>setDrawerOpen(o=>!o)} aria-label="Menu">
+        <span/><span/><span/>
+      </button>
+      <WsLogo size={22} showText={true}/>
+      <div style={{position:"relative",width:36,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        {alertCount>0&&<div style={{width:24,height:24,borderRadius:"50%",background:"#C03030",color:"#fff",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}
+          onClick={()=>setAlertCount(0)}>{alertCount>9?"9+":alertCount}</div>}
       </div>
     </div>
+
+    {/* Mobile drawer overlay */}
+    <div className={`drawer-ov${drawerOpen?" open":""}`} onClick={()=>setDrawerOpen(false)}/>
+    <div className={`drawer${drawerOpen?" open":""}`}><SidebarContent/></div>
+
+    {/* Main content */}
     <div className="main">
       <div className="page-header">
         <h1 className="page-title">{cur?.label}</h1>
-        <div style={{fontSize:12,color:"#636363"}}>Live · {new Date().toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"long"})}</div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          {alertCount>0&&<div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(192,48,48,.08)",border:"1px solid rgba(192,48,48,.2)",borderRadius:8,padding:"4px 10px",cursor:"pointer"}} onClick={()=>setAlertCount(0)}>
+            <div style={{width:8,height:8,borderRadius:"50%",background:"#C03030"}}/>
+            <span style={{fontSize:12,color:"#C03030",fontWeight:700}}>{alertCount} new</span>
+          </div>}
+          <div style={{fontSize:12,color:"var(--mut)"}}>{new Date().toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"long"})}</div>
+        </div>
       </div>
       {section==="overview"&&<Overview token={token}/>}
       {section==="review"&&<ReviewQueue token={token} notify={notify}/>}

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Blue rounded square background -->
+  <rect width="512" height="512" rx="112" fill="#1428A0"/>
+  <!-- W letterform (white) -->
+  <path d="M60 130L120 350L185 195L250 350L310 130"
+        stroke="white" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- S letterform (white) -->
+  <path d="M420 175 C400 148 350 148 335 178 C320 208 360 230 375 255 C392 282 380 315 350 328 C318 342 270 330 255 305"
+        stroke="white" stroke-width="44" stroke-linecap="round" fill="none"/>
+  <!-- Gold vertical bar through S -->
+  <line x1="340" y1="118" x2="340" y2="382" stroke="#C49A00" stroke-width="32" stroke-linecap="round"/>
+</svg>
