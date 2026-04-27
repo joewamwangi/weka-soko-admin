@@ -915,7 +915,15 @@ function Listings({token,notify}){
 
   const load=useCallback(()=>{
     setLoading(true);
-    const p=new URLSearchParams();if(sf)p.set("status",sf);if(q)p.set("search",q);
+    const p=new URLSearchParams();
+    // Default to excluding 'sold' unless specifically selected
+    if(sf){
+      p.set("status",sf);
+    } else {
+      // When no status filter, exclude sold listings (they have their own section)
+      p.set("status","active");
+    }
+    if(q)p.set("search",q);
     req(`/api/admin/listings?${p}`,{},token).then(d=>setListings(d.listings||[])).catch(()=>{}).finally(()=>setLoading(false));
   },[token,q,sf]);
   useEffect(()=>{load();},[load]);
@@ -954,7 +962,7 @@ function Listings({token,notify}){
   return <>
     <div className="sb">
       <input className="inp" style={{flex:1,maxWidth:260}} placeholder="Search listings..." value={q} onChange={e=>setQ(e.target.value)}/>
-      <select className="inp" style={{width:160}} value={sf} onChange={e=>setSf(e.target.value)}><option value="">All Statuses</option><option value="active">Active</option><option value="sold">Sold</option><option value="locked">Locked</option><option value="archived">Archived</option><option value="flagged">Flagged</option><option value="deleted">Deleted</option></select>
+      <select className="inp" style={{width:160}} value={sf} onChange={e=>setSf(e.target.value)}><option value="">Active Listings</option><option value="active">Active</option><option value="locked">Locked</option><option value="archived">Archived</option><option value="flagged">Flagged</option><option value="deleted">Deleted</option><option value="all">All (including Sold)</option></select>
       <span style={{fontSize:12,color:"var(--mut)",alignSelf:"center"}}>{listings.length} listings</span>
     </div>
     <div className="tw">{loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:
