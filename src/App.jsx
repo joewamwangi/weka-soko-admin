@@ -1140,22 +1140,21 @@ function Escrow({token,notify}){
 function SoldListings({token}){
   const [items,setItems]=useState([]);
   const [loading,setLoading]=useState(true);
+  const [error,setError]=useState(null);
   const [pg,setPg]=useState(1);
   const [total,setTotal]=useState(0);
   const PER=30;
 
   useEffect(()=>{
     setLoading(true);
+    setError(null);
     req(`/api/listings/admin/sold?page=${pg}&limit=${PER}`,{},token)
     .then(d=>{
-      console.log("Sold listings response:", d);
       setItems(d.listings||[]);
       setTotal(d.total||0);
     })
     .catch(e=>{
-      console.error("Sold listings error:", e);
-      setItems([]);
-      setTotal(0);
+      setError(e.message || "Failed to load sold listings");
     }).finally(()=>setLoading(false));
   },[pg,token]);
 
@@ -1171,13 +1170,16 @@ function SoldListings({token}){
   };
 
   return <>
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-      <div style={{fontSize:13,color:"#636363",fontWeight:600}}>{total} sold listing{total!==1?"s":""}</div>
-    </div>
-    <div className="tw">
-      {loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:
-      items.length===0?<div className="empty">No sold listings yet</div>:
-      <div className="ts"><table>
+  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+    <div style={{fontSize:13,color:"#636363",fontWeight:600}}>{total} sold listing{total!==1?"s":""}</div>
+  </div>
+  {error&&<div className="card" style={{borderColor:"#C03030",background:"rgba(192,48,48,.05)",marginBottom:16}}>
+    <div style={{color:"#C03030",fontSize:13,fontWeight:600}}>Error loading sold listings: {error}</div>
+  </div>}
+  <div className="tw">
+    {loading?<div style={{textAlign:"center",padding:40}}><Spin/></div>:
+    items.length===0?<div className="empty">{error?"Failed to load sold listings":"No sold listings yet"}</div>:
+    <div className="ts"><table>
         <thead><tr>
           <th>Item</th><th>Price</th><th>Category</th>
           <th>Listed</th><th>Sold</th><th>Time to Sell</th>
