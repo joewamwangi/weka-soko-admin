@@ -354,7 +354,7 @@ function Login({onLogin}){
         </div>
         {resetSuccess?(
           <div style={{textAlign:"center",padding:"20px 0"}}>
-            <div style={{fontSize:14,color:"#15803d",marginBottom:8}}>✓ Password reset successful!</div>
+            <div style={{fontSize:14,color:"#15803d",marginBottom:8}}>Password reset successful!</div>
             <p style={{fontSize:13,color:"var(--mut)",marginBottom:16}}>Your password has been updated. You can now log in.</p>
             <button className="btn bp" style={{width:"100%"}} onClick={()=>{setShowReset(false);setResetSuccess(false);setNewPw("");setConfirmNewPw("");}}>Go to Login →</button>
           </div>
@@ -386,7 +386,7 @@ function Login({onLogin}){
         {err&&<div className="alert-r">{err}</div>}
         {forgotSent?(
           <div style={{textAlign:"center",padding:"20px 0"}}>
-            <div style={{fontSize:14,color:"#15803d",marginBottom:8}}>✓ Reset link sent!</div>
+            <div style={{fontSize:14,color:"#15803d",marginBottom:8}}>Reset link sent!</div>
             <p style={{fontSize:13,color:"var(--mut)",marginBottom:16}}>Check your email for instructions.</p>
             <button className="btn bp" style={{width:"100%"}} onClick={()=>{setShowForgot(false);setForgotSent(false);setForgotEmail("");}}>Go to Login →</button>
           </div>
@@ -1602,9 +1602,9 @@ function Reports({token,notify}){
             <div style={{fontSize:11,color:"var(--dim)"}}>Reported by {r.reporter_name} ({r.reporter_email}) · {new Date(r.created_at).toLocaleDateString()}</div>
           </div>
           {status==="pending"&&<div style={{display:"flex",gap:6,flexDirection:"column",flexShrink:0}}>
-            <button className="btn bp sm" onClick={()=>resolve(r.id,"resolve")}>✓ Resolve</button>
-            <button className="btn br sm" onClick={()=>resolve(r.id,"dismiss")}>✕ Dismiss</button>
-            {r.listing_status==="flagged"&&<button className="btn by sm" onClick={()=>restore(r.listing_id)} disabled={restoring===r.listing_id}>↩ Restore</button>}
+            <button className="btn bp sm" onClick={()=>resolve(r.id,"resolve")}>Resolve</button>
+            <button className="btn br sm" onClick={()=>resolve(r.id,"dismiss")}>Dismiss</button>
+            {r.listing_status==="flagged"&&<button className="btn by sm" onClick={()=>restore(r.listing_id)} disabled={restoring===r.listing_id}>Restore</button>}
           </div>}
         </div>)}
       </div>
