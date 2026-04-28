@@ -12,7 +12,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build"
+    "build": "CI=false npx react-scripts build",
+    "vercel-build": "npm install && npm run build"
   },
   "browserslist": {
     "production": [">0.2%", "not dead", "not op_mini all"],
