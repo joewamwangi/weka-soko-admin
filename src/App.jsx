@@ -1741,7 +1741,7 @@ function AuditLog({token}){
 function Settings({token,notify}){
   const [currentPw,setCurrentPw]=useState("");
   const [newPw,setNewPw]=useState("");
-  const [confirmPw,setConfirmPw]=useState("");
+  const [confirmPw,setConfirmPw]=useState(""); const [showCurrent,setShowCurrent]=useState(false); const [showNew,setShowNew]=useState(false); const [showConfirm,setShowConfirm]=useState(false);
   const [loading,setLoading]=useState(false);
 
   const submit=async()=>{
@@ -1765,15 +1765,15 @@ function Settings({token,notify}){
       <h3 style={{fontSize:16,fontWeight:700,marginBottom:16}}>Change Password</h3>
       <div style={{marginBottom:14}}>
         <label className="lbl">Current Password</label>
-        <input className="inp" type="password" value={currentPw} onChange={e=>setCurrentPw(e.target.value)} placeholder="Enter current password"/>
+        <div style={{position:"relative"}}><input className="inp" type={showCurrent?"text":"password"} value={currentPw} onChange={e=>setCurrentPw(e.target.value)} placeholder="Enter current password"/><button type="button" onClick={()=>setShowCurrent(!showCurrent)} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,opacity:.6}} title={showCurrent?"Hide":"Show"}>{showCurrent?"??":"?????"}</button></div>
       </div>
       <div style={{marginBottom:14}}>
         <label className="lbl">New Password</label>
-        <input className="inp" type="password" value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Min 8 characters"/>
+        <div style={{position:"relative"}}><input className="inp" type={showNew?"text":"password"} value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="Min 8 characters"/><button type="button" onClick={()=>setShowNew(!showNew)} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,opacity:.6}} title={showNew?"Hide":"Show"}>{showNew?"??":"?????"}</button></div>
       </div>
       <div style={{marginBottom:20}}>
         <label className="lbl">Confirm New Password</label>
-        <input className="inp" type="password" value={confirmPw} onChange={e=>setConfirmPw(e.target.value)} placeholder="Re-enter new password"/>
+        <div style={{position:"relative"}}><input className="inp" type={showConfirm?"text":"password"} value={confirmPw} onChange={e=>setConfirmPw(e.target.value)} placeholder="Re-enter new password"/><button type="button" onClick={()=>setShowConfirm(!showConfirm)} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,opacity:.6}} title={showConfirm?"Hide":"Show"}>{showConfirm?"??":"?????"}</button></div>
       </div>
       <button className="btn bp" onClick={submit} disabled={loading||!currentPw||!newPw||!confirmPw}>
         {loading?<span className="spin"/>:"Change Password"}
@@ -2154,3 +2154,5 @@ export default function AdminApp(){
     {toast&&<Toast key={toast.id} msg={toast.msg} ok={toast.ok} onClose={()=>setToast(null)}/>}
   </>;
 }
+
+
